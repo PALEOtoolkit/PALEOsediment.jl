@@ -1,0 +1,266 @@
+########################################################
+# Boudreau (1996) test cases with Corg, O2, SO4/H2S, P.
+# Three columns: shelf/slope,  rise, rise (no bioturbation)
+# NB: no N, so results differ in detail from the paper.
+##############################################################
+sediment_Corg_O2:
+    parameters:
+        num_columns: 3
+        CIsotope: ScalarData
+        SIsotope: ScalarData
+    domains:
+        global:
+            # scalar domain
+     
+        fluxOceanfloor:
+            reactions:
+                floorstubparticulateflux:
+                    class: ReactionFluxTarget
+                    parameters:
+                        const_stub: true
+                        target_prefix: particulateflux_
+                        fluxlist: ["Corg1", "Corg2"]
+                    
+                    variable_attributes:
+                        #                                   Boudreau (1996) test cases
+                        #                                   Shelf/slope Rise    Rise
+                        #                                 
+                        #                                    130    18.5        18.5  umol/cm^2/y  
+                        particulateflux_Corg1:initial_value: [130e-2, 0.0,      0.0]  # mol yr-1 = umol/cm^2/y * 1e-6 * area m^2 * 1e4
+                        particulateflux_Corg2:initial_value: [0.0,    18.5e-2,   18.5e-2]  # mol yr-1 = umol/cm^2/y * 1e-6 * area m^2 * 1e4
+                                        
+
+                transfersolute:
+                    class: ReactionFluxTarget
+                    parameters:
+                        target_prefix: soluteflux_
+                        fluxlist: ["O2", "P", "SO4", "H2S", "CH4"]
+                   
+
+        fluxOceanBurial:       
+            reactions:
+                transfer:
+                    class: ReactionFluxTarget
+                    parameters:
+                        target_prefix: flux_
+                        fluxlist: ["Corg1", "Corg2"]
+                    variable_links:
+                        
+ 
+        oceanfloor:
+
+            reactions:
+                grid:
+                    class: ReactionUnstructuredVectorGrid
+                    parameters:
+                        ncells: external%num_columns
+                
+                floorstubphys: 
+                    class: ReactionConst
+                    parameters:
+                        constnames: ["Afloor", "zfloor", "temp", "sal", "phi", "w_accum", "zbio", "Dbio", "alpha"]
+                    variable_attributes:
+                        #                       Boudreau (1996) test cases
+                        #                       Shelf/slope Rise    Rise
+                        Afloor:initial_value:   1.0                              # m^2
+                        zfloor:initial_value:   [-100.0, -1000.0,        -1000.0] # m
+                        temp:initial_value:     [278.15,    275.15,     275.15]  # K
+                        sal:initial_value:      35.0 # psu
+                        phi:initial_value:      0.8
+                        w_accum:initial_value:  [0.03e-2,   0.003e-2,   0.003e-2]  # m yr-1
+                        zbio:initial_value:     0.1  # m, 10 cm bioturbation depth
+                        Dbio:initial_value:     [1.35e-4,   0.269e-4,  0.0] # m^2 yr-1
+                        alpha:initial_value:    0.0     # yr-1
+
+                        # TODO - need to set norm_value so cell volume is reasonable for state var norms
+                        Afloor:norm_value:    1.0                              # m^2
+                        phi:norm_value:      0.8
+
+                floorstubsoluteconc: 
+                    class: ReactionConst
+                    parameters:
+                        constnames: ["O2_conc", "P_conc", "SO4_conc", "H2S_conc", "CH4_conc"]
+                    variable_attributes:
+                        #                       Boudreau (1996) test cases
+                        #                       Shelf/slope Rise        Rise
+                        O2_conc:initial_value:   [0.250,    0.180,        0.180]  # mol m-3
+                        SO4_conc:initial_value:   28756.0e-3   # concentration mol m-3 ~ 28e-3 mol/kg * 1027 kg m-3
+                        H2S_conc:initial_value:   0.0  # mol m-3
+                        CH4_conc:initial_value:   0.0  # mol m-3
+                        P_conc:initial_value:    0.001  # mol m-3
+                        
+
+                transfer_particulatefluxOceanfloor:
+                    class: ReactionFluxTransfer
+                    parameters:
+                        transfer_matrix:      Identity
+                        input_fluxes:         fluxOceanfloor.particulateflux_$fluxname$
+                        output_fluxes:        sediment.oceanfloor.$fluxname$_sms
+                    variable_links:           
+
+        ocean:  # dummy Domain to suppress error from fluxOceanfloor
+            
+
+        sediment:
+            reactions:
+                bioratesed:
+                    class: ReactionSedimentBioRates
+
+                transportsed:
+                   class: ReactionSedimentTransport
+                   parameters:
+                        L:                              0.15  # 0.15m column
+                        ncellspercol:                   100
+                        f_grid:                         quadratic
+                        grid_eta:                       0.075
+                        zdbl:                           0.04e-2  # diffusive boundary layer at sediment-water interface
+                       
+                reservoir_O2:
+                    class: ReactionReservoirTotal            
+                    variable_links:
+                        R*:                             O2*
+                        volume:                         volume_solute
+                    variable_attributes:
+                        R_conc:vphase:                  VP_Solute                    
+                        R:initial_value:                0.0  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
+                        R:norm_value:                   200e-3                        
+                        R_conc:diffusivity_speciesname: O2
+
+                reservoir_SO4:
+                    class: ReactionReservoirTotal            
+                    variable_links:
+                        R*:                             SO4*
+                        volume:                         volume_solute
+                    variable_attributes:
+                        R_conc:vphase:                  VP_Solute                    
+                        R:initial_value:                0.0  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
+                        R:norm_value:                   20000e-3                        
+                        R_conc:diffusivity_speciesname: SO4
+
+                reservoir_H2S:
+                    class: ReactionReservoirTotal            
+                    variable_links:
+                        R*:                             H2S*
+                        volume:                         volume_solute
+                    variable_attributes:
+                        R_conc:vphase:                  VP_Solute                    
+                        R:initial_value:                0.0  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
+                        R:norm_value:                   200e-3                        
+                        R_conc:diffusivity_speciesname: H2S 
+
+                reservoir_CH4:
+                    class: ReactionReservoirTotal            
+                    variable_links:
+                        R*:                             CH4*
+                        volume:                         volume_solute
+                    variable_attributes:
+                        R_conc:vphase:                  VP_Solute                    
+                        R:initial_value:                0.0  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
+                        R:norm_value:                   200e-3                        
+                        R_conc:diffusivity_speciesname: CH4
+
+                reservoir_P:
+                    class: ReactionReservoirTotal            
+                    variable_links:
+                        R*:                             P*
+                        volume:                         volume_solute
+                    variable_attributes:
+                        R_conc:vphase:                  VP_Solute                    
+                        R:initial_value:                0.0  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
+                        R:norm_value:                   2e-3                        
+                        R_conc:diffusivity_speciesname: PO4
+
+                reservoir_Corg1:
+                    class: ReactionReservoirTotal            
+                    variable_links:
+                        R*:                             Corg1*
+                        volume:                         volume_solid
+                    variable_attributes:
+                        R_conc:vphase:                  VP_Solid                        
+                        R:initial_value:                0.0  # concentration m-3 solid phase
+                                                             #  mol m-3              =  g cm-3            / (g mol-1) * m^3 cm-3
+                        R:norm_value:                   2083.3  # mol m-3 solid for 1% TOC  =  2.5  * (1 wt%/100) / 12 * 1e6
+
+                reservoir_Corg2:
+                    class: ReactionReservoirTotal            
+                    variable_links:
+                        R*:                             Corg2*
+                        volume:                         volume_solid
+                    variable_attributes:
+                        R_conc:vphase:                  VP_Solid                        
+                        R:initial_value:                0.0  # concentration m-3 solid phase
+                                                             #  mol m-3              =  g cm-3            / (g mol-1) * m^3 cm-3
+                        R:norm_value:                   2083.3  # mol m-3 solid for 1% TOC  =  2.5  * (1 wt%/100) / 12 * 1e6
+                                         
+                pocdecay1:
+                    class: ReactionParticleDecay
+                    parameters:
+                        decay_timescale:     1.6393  # yr,  0.61 yr-1                      
+                    variable_links:
+                        Particle*:       Corg1*
+                        decayflux:       POC_decay
+
+                pocdecay2:
+                    class: ReactionParticleDecay
+                    parameters:
+                        decay_timescale:     100.0  # yr,  1e-2 yr-1
+                    variable_links:
+                        Particle*:       Corg2*
+                        decayflux:       POC_decay
+
+                pocdecaycomponents:
+                    class: ReactionFluxToComponents
+                    parameters: 
+                        outputflux_prefix: remin_                   
+                        outputflux_names: ["Corg", "N", "P"]
+                        #                  106/106 16/106  1/106
+                        outputflux_stoich: [1.0, 0.15094, 0.009434]   # must match input Corg stoich
+                    variable_links:
+                        inputflux:  POC_decay
+                   
+                reminsed:
+                    class: ReactionReminO2_SO4_CH4
+
+                    parameters:
+                        SO4reminlimit:  1000.0e-3                
+
+                    variable_links:
+                        soluteflux_*:   "*_sms"
+
+                redox_H2S_O2:
+                    class: ReactionRedoxH2S_O2
+
+                    parameters:           
+                        R_H2S_O2: 3e5 # Boudreau (1997)
+                        # R_H2S_O2: 3.65e4 # 3.65e3 # (mol m-3) yr-1
+                        # R_H2S_O2: 7e3 # slow > 1e6 iters rate for numerical efficiency (mol m-3) yr-1
+                        # R_H2S_O2: 3.65e3 # fast reduce rate for numerical efficiency (mol m-3) yr-1
+                        # R_H2S_O2: 1.8e3 # fast reduce rate for numerical efficiency (mol m-3) yr-1
+
+                    variable_links:
+                        volume:                         volume_solute
+
+                redox_CH4_O2:
+                    class: ReactionRedoxCH4_O2
+
+                    parameters:                 
+                        # R_CH4_O2: 1e4 # reduce rate for numerical stability 
+                        R_CH4_O2: 1e7 # (mol m-3) yr-1 (1e10 mol/l yr-1) Boudreau (1997)
+
+                    variable_links:
+                        volume:                         volume_solute
+
+                redox_CH4_SO4:
+                    class: ReactionRedoxCH4_SO4
+
+                    parameters:                 
+                        R_CH4_SO4: 10.0 # (mol m-3) yr-1
+
+                    variable_links:
+                        volume:                         volume_solute
+
+    
+        sedimentfloor:
+            reactions:
+
+        sedcrust: # dummy Domain to suppress error from fluxOceanBurial

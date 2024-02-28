@@ -1,0 +1,44 @@
+name = "PALEOsediment"
+uuid = "e0a37952-6f01-4236-91ff-62fdc855f67b"
+authors = ["sd336 "]
+version = "0.1.0"
+
+[deps]
+Infiltrator = "5903a43b-9cc3-4c30-8d17-598619ec4e9b"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+PALEOaqchem = "673cec3b-17d1-411f-9fcd-71c01c593120"
+PALEOboxes = "804b410e-d900-4b2a-9ecd-f5a06d4c1fd4"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+TestEnv = "1e6cf692-eddd-4d53-88a5-2d735e33781b"
+
+[compat]
+DataFrames = "1.0"
+Documenter = "1.0"
+Infiltrator = "1.0"
+LineSearches = "7.0"
+NLsolve = "4.5.1"
+PALEOaqchem = "0.3.4"
+PALEOboxes = "0.20.4, 0.21"
+PALEOmodel = "0.15.8"
+Pkg = "1.0"
+Plots = "1.38"
+SparseArrays = "1.0"
+Sundials = "4.0"
+TestEnv = "1.0"
+julia = "1.9"
+
+[extras]
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+LineSearches = "d3d80556-e9d4-5f37-9878-2ab0fcc64255"
+Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
+NLsolve = "2774e3e8-f4cf-5e23-947b-6d7e65073b56"
+PALEOaqchem = "673cec3b-17d1-411f-9fcd-71c01c593120"
+PALEOmodel = "bf7b4fbe-ccb1-42c5-83c2-e6e9378b660c"
+Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+Sundials = "c3572dad-4567-51f8-b174-8c6c989267f4"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["DataFrames", "Documenter", "LineSearches", "Logging", "NLsolve", "PALEOaqchem", "PALEOmodel", "Pkg", "Plots", "Sundials", "Test"]

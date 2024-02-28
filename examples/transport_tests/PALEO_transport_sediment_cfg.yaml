@@ -1,0 +1,136 @@
+####################################
+# Abiotic sediment, O2 only
+####################################
+sediment_abiotic_O2:
+    parameters:
+        CIsotope: ScalarData
+        SIsotope: ScalarData
+    domains:
+        global:
+            # scalar domain
+     
+        fluxOceanfloor:
+            reactions:
+                floorstubparticulateflux:
+                    class: ReactionFluxTarget
+                    parameters:
+                        const_stub: true
+                        target_prefix: particulateflux_
+                        fluxlist: ["Corg"]
+
+
+                    variable_attributes:
+                        #                                   Boudreau (1996) test cases
+                        #                                   Shelf/slope Rise    Rise
+                        #                                 
+                        #                                    130    18.5        18.5  umol/cm^2/y  
+                        particulateflux_Corg:initial_value: [130e-2, 18.5e-2,   18.5e-1]  # mol yr-1 = umol/cm^2/y * 1e-6 * area m^2 * 1e4
+                    
+                floorstubsoluteflux:
+                    class: ReactionFluxTarget
+                    parameters:
+                        target_prefix: soluteflux_
+                        fluxlist: ["O2"]
+
+
+        fluxOceanBurial:       
+            reactions:
+                transfer:
+                    class: ReactionFluxTarget
+                    parameters:
+                        target_prefix: flux_
+                        fluxlist: ["Corg"]
+                        
+ 
+        oceanfloor:
+
+            reactions:
+                grid:
+                    class: ReactionUnstructuredVectorGrid
+                    parameters:
+                        ncells: 3
+
+                floorstubphys: 
+                    class: ReactionConst
+                    parameters:
+                        constnames: ["Afloor", "zfloor", "temp", "sal", "phi", "phimin", "w_accum", "zbio", "Dbio", "alpha"]
+                    variable_attributes:
+                        #                       Boudreau (1996) test cases
+                        #                       Shelf/slope Rise    Rise x 10
+                        Afloor:initial_value:   [1.0,       1.0,        10.0] # m^2
+                        zfloor:initial_value:   [-100.0, -100.0,        -1000.0] # m
+                        temp:initial_value:     [278.15,    275.15,     275.15]  # K
+                        sal:initial_value:      35.0 # psu
+                        phi:initial_value:      [0.8,       0.8,        0.8] # surface porosity
+                        phimin:initial_value:   [0.7,       0.7,        0.7] # minimum porosity
+                        w_accum:initial_value:  [0.03e-2,   0.003e-2,   0.003e-2]  # m yr-1
+                        zbio:initial_value:     0.1  # m, 10 cm bioturbation depth
+                        Dbio:initial_value:     [1.35e-4,   0.0,        0.269e-4] # m^2 yr-1
+                        alpha:initial_value:    0.0     # yr-1
+
+                floorstubsoluteconc: 
+                    class: ReactionConst
+                    parameters:
+                        constnames: ["O2_conc"]
+                    variable_attributes:
+                        #                       Boudreau (1996) test cases
+                        #                       Shelf/slope Rise        Rise
+                        O2_conc:initial_value:   [0.250,    0.180,        0.180]  # mol m-3
+
+                transfer_particulatefluxOceanfloor:
+                    class: ReactionFluxTransfer
+                    parameters:
+                        transfer_matrix:      Identity
+                        input_fluxes:         fluxOceanfloor.particulateflux_$fluxname$
+                        output_fluxes:        sediment.oceanfloor.$fluxname$_sms
+                    variable_links:           
+                        
+
+        ocean:  # dummy Domain to suppress error from fluxOceanfloor
+            
+
+        sediment:
+            reactions:
+                bioratesed:
+                    class: ReactionSedimentBioRates
+
+                transportsed:
+                    class: ReactionSedimentTransport
+                    parameters:
+                        L:                             0.15  # 0.15m column with 60 x 2.5mm bins
+                        ncellspercol:                  60
+                        f_porosity:                    ExpAtten #  Const
+                        zpor:                          0.1 # (m) lengthscale for porosity
+                        w_solute:                      true  # w_solute = w_solid at base of column
+                       
+                reservoir_O2:
+                    class: ReactionReservoirTotal            
+                    variable_links:
+                        R*:                             O2*
+                        volume:                         volume_solute
+                    variable_attributes:
+                        R_conc:vphase:                  VP_Solute                    
+                        R:initial_value:                0.0  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
+                        R:norm_value:                   200e-3                        
+                        R_conc:diffusivity_speciesname: O2 # 2e-5 # cm^2/s approx constant
+
+                reservoir_Corg:
+                    class: ReactionReservoirTotal            
+                    variable_links:
+                        R*:                             Corg*
+                        volume:                         volume_solid
+                    variable_attributes:
+                        R_conc:vphase:                  VP_Solid                        
+                        R:initial_value:                0.0  # concentration m-3 solid phase
+                                                             #  mol m-3              =  g cm-3            / (g mol-1) * m^3 cm-3
+                        R:norm_value:                   2083.3  # mol m-3 solid for 1% TOC  =  2.5  * (1 wt%/100) / 12 * 1e6
+                                         
+    
+    
+        sedimentfloor:
+            reactions:
+
+        sedcrust: # dummy Domain to suppress error from fluxOceanBurial
+            
+
+
