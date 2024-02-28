@@ -46,7 +46,7 @@ makedocs(
         prettyurls = get(ENV, "CI", nothing) == "true"
     ),
     plugins = [bib],
-    remotes = nothing,  # TODO temporary hack for local testing
+    # remotes = nothing,  # TODO temporary hack for local testing
 )
 
 @info "Local html documentation is available at $(joinpath(@__DIR__, "build/index.html"))"
