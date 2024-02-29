@@ -80,6 +80,9 @@ Base.@kwdef mutable struct ReactionSedimentTransport{P} <: PB.AbstractReaction
 
         PB.ParBool("w_solute", false,
             description="true to assume w_solute = w_solid at base of column, false to set w_solute=0.0 (ie zero solute velocity at great depth)"),
+
+        PB.ParDouble("rho_ref", 1027.0, units="kg m-3",
+            description = "assumed constant sw density conversion factor"),
     )
 
 
@@ -189,7 +192,7 @@ const grid_vars = [
     PB.VarPropStateIndep("zlower",              "m",        "depth of lower surface of box (m)"),
     PB.VarPropStateIndep("zmid",                "m",        "mean depth of box"),
     PB.VarPropStateIndep("pressure",            "dbar",     "sediment pressure"),
-    # PB.VarPropStateIndep("rho_ref",             "kg m^-3",  "density conversion factor"),
+    PB.VarPropStateIndep("rho_ref",             "kg m^-3",  "density conversion factor"),
 ]
 
 const oceanfloor_vars = [
@@ -317,7 +320,7 @@ function do_sediment_setup_grid(
     grid_vars.volume .= grid_vars.Abox.*(grid_vars.zupper .- grid_vars.zlower)
     grid_vars.volume_total[] = sum(grid_vars.volume)
 
-    # grid_vars.rho_ref .= 1027.0 # kg m-3 assumed constant conversion factor
+    grid_vars.rho_ref .= pars.rho_ref[] # kg m-3 assumed constant sw density conversion factor
 
     @info "do_sediment_setup_grid $(PB.fullname(rj)): volume_total $(grid_vars.volume_total[]) m^3"
     isfinite(grid_vars.volume_total[]) || error("configuration error - sediment volume_total is not finite")
