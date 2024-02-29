@@ -7,6 +7,15 @@ PALEOtoolkit sediment components and standalone examples
 
 **NB: work-in-progress - this repo contains initial minimal examples only to test infrastructure.**
 
+The `PALEOsediment` package provides an implementation of sediment transport (PALEO reaction `ReactionSedimentTransport`) for n x 1D sediment columns.
+This can then be combined with biogeochemistry implemented by the `PALEOaqchem` and `PALEOboxes` packages and solvers from the `PALEOmodel` package 
+to create either standalone sediment models or coupled water-column - sediment configurations.
+
+The implementation of 1D sediment reaction-transport is standard (eg [Van Cappellen & Wang (1996)](https://dx.doi.org/10.2475/ajs.296.3.197), [Boudreau (1996)](https://dx.doi.org/10.1016/0098-3004(95)00115-8)) and uses the PALEOtoolkit framework to provide:
+- extensible configuration for biogeochemical species and reactions defined in a .yaml configuration file
+- standalone and coupled sediment configurations
+- fully implicit numerical solution using a combination of sparse automatic differentation to generate Jacobians, and efficient solvers including pseudo-transient-continuation for steady-state solutions.
+
 ## Installation and running a minimal example
 
 ### Installation
