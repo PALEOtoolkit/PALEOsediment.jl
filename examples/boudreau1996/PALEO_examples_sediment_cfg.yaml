@@ -34,7 +34,7 @@ sediment_Corg_O2:
                     class: ReactionFluxTarget
                     parameters:
                         target_prefix: soluteflux_
-                        fluxlist: ["O2", "P", "SO4", "H2S", "CH4"]
+                        fluxlist: ["O2", "P", "SO4::SIsotope", "H2S::SIsotope", "CH4"]
                    
 
         fluxOceanBurial:       
@@ -79,13 +79,15 @@ sediment_Corg_O2:
                 floorstubsoluteconc: 
                     class: ReactionConst
                     parameters:
-                        constnames: ["O2_conc", "P_conc", "SO4_conc", "H2S_conc", "CH4_conc"]
+                        constnames: ["O2_conc", "P_conc", "SO4_conc::SIsotope", "H2S_conc::SIsotope", "CH4_conc"]
                     variable_attributes:
                         #                       Boudreau (1996) test cases
                         #                       Shelf/slope Rise        Rise
                         O2_conc:initial_value:   [0.250,    0.180,        0.180]  # mol m-3
                         SO4_conc:initial_value:   28756.0e-3   # concentration mol m-3 ~ 28e-3 mol/kg * 1027 kg m-3
+                        SO4_conc:initial_delta:    0.0
                         H2S_conc:initial_value:   0.0  # mol m-3
+                        H2S_conc:initial_delta:    0.0
                         CH4_conc:initial_value:   0.0  # mol m-3
                         P_conc:initial_value:    0.001  # mol m-3
                         
@@ -122,29 +124,33 @@ sediment_Corg_O2:
                         volume:                         volume_solute
                     variable_attributes:
                         R_conc:vphase:                  VP_Solute                    
-                        R:initial_value:                0.0  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
+                        R:initial_value:                1e-30 # 0.0  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
                         R:norm_value:                   200e-3                        
                         R_conc:diffusivity_speciesname: O2
 
                 reservoir_SO4:
-                    class: ReactionReservoirTotal            
+                    class: ReactionReservoirTotal
+                    parameters:
+                        field_data: external%SIsotope
                     variable_links:
                         R*:                             SO4*
                         volume:                         volume_solute
                     variable_attributes:
                         R_conc:vphase:                  VP_Solute                    
-                        R:initial_value:                0.0  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
+                        R:initial_value:                1e-30 # 0.0  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
                         R:norm_value:                   20000e-3                        
                         R_conc:diffusivity_speciesname: SO4
 
                 reservoir_H2S:
-                    class: ReactionReservoirTotal            
+                    class: ReactionReservoirTotal
+                    parameters:
+                        field_data: external%SIsotope           
                     variable_links:
                         R*:                             H2S*
                         volume:                         volume_solute
                     variable_attributes:
                         R_conc:vphase:                  VP_Solute                    
-                        R:initial_value:                0.0  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
+                        R:initial_value:                1e-30 # 0.0  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
                         R:norm_value:                   200e-3                        
                         R_conc:diffusivity_speciesname: H2S 
 
@@ -155,7 +161,7 @@ sediment_Corg_O2:
                         volume:                         volume_solute
                     variable_attributes:
                         R_conc:vphase:                  VP_Solute                    
-                        R:initial_value:                0.0  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
+                        R:initial_value:                1e-30 # 0.0  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
                         R:norm_value:                   200e-3                        
                         R_conc:diffusivity_speciesname: CH4
 
@@ -166,7 +172,7 @@ sediment_Corg_O2:
                         volume:                         volume_solute
                     variable_attributes:
                         R_conc:vphase:                  VP_Solute                    
-                        R:initial_value:                0.0  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
+                        R:initial_value:                1e-30 # 0.0  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
                         R:norm_value:                   2e-3                        
                         R_conc:diffusivity_speciesname: PO4
 
@@ -177,7 +183,7 @@ sediment_Corg_O2:
                         volume:                         volume_solid
                     variable_attributes:
                         R_conc:vphase:                  VP_Solid                        
-                        R:initial_value:                0.0  # concentration m-3 solid phase
+                        R:initial_value:                1e-30 # 0.0  # concentration m-3 solid phase
                                                              #  mol m-3              =  g cm-3            / (g mol-1) * m^3 cm-3
                         R:norm_value:                   2083.3  # mol m-3 solid for 1% TOC  =  2.5  * (1 wt%/100) / 12 * 1e6
 
@@ -188,7 +194,7 @@ sediment_Corg_O2:
                         volume:                         volume_solid
                     variable_attributes:
                         R_conc:vphase:                  VP_Solid                        
-                        R:initial_value:                0.0  # concentration m-3 solid phase
+                        R:initial_value:                1e-30 # 0.0  # concentration m-3 solid phase
                                                              #  mol m-3              =  g cm-3            / (g mol-1) * m^3 cm-3
                         R:norm_value:                   2083.3  # mol m-3 solid for 1% TOC  =  2.5  * (1 wt%/100) / 12 * 1e6
                                          

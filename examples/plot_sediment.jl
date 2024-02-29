@@ -66,6 +66,30 @@ function plot_solutes(
     return nothing
 end
 
+function plot_solute_deltas(
+    output;
+    solutes=["SO4", "H2S"],
+    colT=[-1e12, 0.1, 1.0, 10.0, 100.0, 1000.0, 1e12],
+    colrange=1:3,
+    pager=PALEOmodel.DefaultPlotPager(),
+)
+    for s in solutes
+        for icol in colrange
+            pager(plot(title="[$s] delta $icol", output, ["sediment.$(s).v_delta"], (tmodel=colT, column=icol), xlabel="$s delta (per mil)", swap_xy=true))
+        end
+    end
+
+    for s in solutes
+        for icol in colrange
+            pager(plot(title="$s flux Oceanfloor delta $icol", output, ["fluxOceanfloor.soluteflux_$s.v_delta"], (cell=icol,), ylabel="$s delta (per mil)",))
+        end
+    end
+
+    pager(:newpage)
+
+    return nothing
+end
+
 function plot_solids(
     output;
     solids=["Corg1"],

@@ -29,3 +29,10 @@ Summary plots show oceanfloor solute fluxes and remineralization pathways:
 ![O2 and SO4 gradient summary figure](figures/PALEO_examples_sediment_x10_summary.svg)
 ###### Figure 1
 *Oceanfloor solute fluxes and remineralization pathways vs oceanfloor [O2] and [SO4] concentration*
+
+# Sulphur isotope example
+
+    julia> include("PALEO_examples_sediment_Sisotopes.jl")
+
+three sediment column example as `PALEO_examples_sediment.jl`, with sulphur isotopes enabled and low (1 mM) oceanfloor [SO4]
+to illustrate Rayleigh fractionation within the sediment column as [SO4] becomes limiting.
