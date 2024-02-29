@@ -15,6 +15,8 @@ import Infiltrator # julia debugger
 
 Sediment transport for n x 1D sediment columns.
 
+## Physical environment
+
 A grid with n columns is created in a `Domain` `sediment`, bounded at the top by `Domain` `oceanfloor` and
 at the base by `Domain` `sedimentfloor`.  Boundary cells at the sediment surface are therefore
 in subdomain `sediment.oceanfloor`.
@@ -22,17 +24,26 @@ in subdomain `sediment.oceanfloor`.
 The number of columns, and column area, water depth, accumulation rate, and porosity are set by `oceanfloor` Variables.
 Bioturbation and bioirrigation rates should be supplied on the sediment grid eg by [`PALEOsediment.Sediment.SedimentBioRates.ReactionSedimentBioRates`](@ref).
 
+## Transport components and species
+
 Each component `<totalname>` to be transported should be defined by a source-minus-sink flux `<totalname>_sms`,
-and one or more concentration Variables with names of form `<rootnameN>_conc`.
+and one or more concentration Variables with names of form `<speciesname>_conc`
+
 Solute concentration Variables are identified by attributes `vphase == VP_Solute` and `advect == true`,
 and are transported by diffusion, bioturbation and bioirrigation, and advection.
-If the `totalname` attribute is present, then this is used to define the appropriate `<totalname>_sms` flux
-(allowing multiple species concentrations with different transport properties or phases for a single `<totalname>`),
-otherwise `<totalname>` is assumed to be the same as `<rootnameN>`. Transport fluxes are then accumulated
-into `<totalname>_sms`.
 Species-specific solute diffusivities are calculated based on the attribute `diffusivity_speciesname` of the
-`<rootnameN>_conc` solute Variables, which should be one of the  names available from `PALEOaqchem.MolecularDiffusion.create_solute_diffusivity_func`
-Similarly, solid phase concentration Variables are transported by bioturbation and advection, and identified by attribute `vphase == VP_Solid` and `advect == true`.
+`<speciesname>_conc` solute Variables, which should be one of the  names available from
+`PALEOaqchem.MolecularDiffusion.create_solute_diffusivity_func`.
+
+Solid concentration Variables are identified by attributes `vphase == VP_Solid` and `advect == true`,
+and are transported by bioturbation and advection.
+
+If the `totalname` attribute is present on variable `<speciesname>_conc`, then this is used to define the 
+appropriate `<totalname>_sms` flux (allowing multiple species concentrations with different transport properties
+or phases for a single `<totalname>`), otherwise `<totalname>` is assumed to be the same as `<speciesname>`. 
+Transport fluxes are then accumulated into `<totalname>_sms`.
+
+## Boundary conditions
 
 Oceanfloor solute fluxes should be defined in the `Domain` `fluxOceanfloor`, with names `fluxOceanfloor.soluteflux_<totalname>`.
 Input particulate fluxes should be added by the `fluxOceanfloor` flux coupler to the surface sediment cells
@@ -80,7 +91,7 @@ Base.@kwdef mutable struct ReactionSedimentTransport{P} <: PB.AbstractReaction
 
 end
 
-"Define sediment grid for n x 1D columns, where n is derived from Oceanfloor Domain"
+# Define sediment grid for n x 1D columns, where n is derived from Oceanfloor Domain
 function PB.set_model_geometry(rj::ReactionSedimentTransport, model::PB.Model)
 
     rj.domain_oceanfloor = PB.get_domain(model, "oceanfloor")
@@ -178,7 +189,7 @@ const grid_vars = [
     PB.VarPropStateIndep("zlower",              "m",        "depth of lower surface of box (m)"),
     PB.VarPropStateIndep("zmid",                "m",        "mean depth of box"),
     PB.VarPropStateIndep("pressure",            "dbar",     "sediment pressure"),
-    PB.VarPropStateIndep("rho_ref",             "kg m^-3",  "density conversion factor"),
+    # PB.VarPropStateIndep("rho_ref",             "kg m^-3",  "density conversion factor"),
 ]
 
 const oceanfloor_vars = [
@@ -306,7 +317,7 @@ function do_sediment_setup_grid(
     grid_vars.volume .= grid_vars.Abox.*(grid_vars.zupper .- grid_vars.zlower)
     grid_vars.volume_total[] = sum(grid_vars.volume)
 
-    grid_vars.rho_ref .= 1027.0 # kg m-3 assumed constant conversion factor
+    # grid_vars.rho_ref .= 1027.0 # kg m-3 assumed constant conversion factor
 
     @info "do_sediment_setup_grid $(PB.fullname(rj)): volume_total $(grid_vars.volume_total[]) m^3"
     isfinite(grid_vars.volume_total[]) || error("configuration error - sediment volume_total is not finite")
