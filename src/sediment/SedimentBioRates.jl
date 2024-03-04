@@ -1,5 +1,7 @@
 module SedimentBioRates
 
+import SpecialFunctions
+
 import PALEOboxes as PB
 using PALEOboxes.DocStrings
 
@@ -26,11 +28,11 @@ Base.@kwdef mutable struct ReactionSedimentBioRates{P} <: PB.AbstractReaction
             description="functional form for bioturbation max rate"),
 
         PB.ParString("f_bioTurbDepth", "ConstCutoff",
-            allowed_values=["ConstCutoff", "ErfcCutoff", "ExpCutoff"],
+            allowed_values=["ConstCutoff", "ErfcCutoff", "Exp1Cutoff", "Exp2Cutoff"],
             description="functional form of bioturbation rate with depth in sediment"),
 
         PB.ParString("f_bioIrrigDepth", "ConstCutoff",
-            allowed_values=["ConstCutoff", "ErfcCutoff", "ExpCutoff"],
+            allowed_values=["ConstCutoff", "ErfcCutoff", "Exp1Cutoff", "Exp2Cutoff"],
             description="functional form of bioirrigation rate with depth in sediment"),
 
         PB.ParString("f_bioO2", "None",
@@ -40,6 +42,9 @@ Base.@kwdef mutable struct ReactionSedimentBioRates{P} <: PB.AbstractReaction
             description="oceanfloor [O2] for 50% decrease in bioturbation/bioirrigation"),
         PB.ParDouble("bioO2decreaserate", 12e-3, units="mol m-3",
             description="oceanfloor [O2] sharpness of decrease in bioturbation/bioirrigation"),
+        
+        PB.ParBool("separate_zbio", false,
+            description="true to use zbioturb, zbioirrig variables, false to use zbio for both bioturbation and bioirrigation"),
     )
 
 
@@ -50,10 +55,8 @@ function PB.register_methods!(rj::ReactionSedimentBioRates, model::PB.Model)
     vars = [
         PB.VarDepColumn("oceanfloor_Dbio"=>"oceanfloor.Dbio",
             "m^2 yr-1", "characteristic value of bioturbation effective diffusivity"),
-        PB.VarDepColumn("oceanfloor_O2_conc"=>"(ocean.oceanfloor.O2_conc)",
+        PB.VarDepColumn("oceanfloor_O2_conc"=>"(oceanfloor.O2_conc)",
             "mol m-3", "oceanfloor oxygen concentration"),
-        PB.VarDepColumn("oceanfloor_zbio"=>"oceanfloor.zbio",
-            "m", "characteristic depth for bioturbation and bioirrigation (+ve)"),
         PB.VarDepColumn("oceanfloor_alpha"=>"oceanfloor.alpha",
             "yr-1", "characteristic value for bioirrigation exchange rate"),
         PB.VarDep("zmid",
@@ -61,8 +64,21 @@ function PB.register_methods!(rj::ReactionSedimentBioRates, model::PB.Model)
         PB.VarProp("diff_bioturb",
             "m^2 yr-1", "bioturbation effective diffusivity"),
         PB.VarProp("alpha_bioirrig",
-             "yr-1",     "bioirrigation exchange rate"),
-    ]   
+            "yr-1",     "bioirrigation exchange rate"),
+    ]
+    if rj.pars.separate_zbio[]
+        append!(vars, [
+            PB.VarDepColumn("oceanfloor_zbioturb"=>"oceanfloor.zbioturb",
+                "m", "characteristic depth for bioturbation (+ve)"),
+            PB.VarDepColumn("oceanfloor_zbioirrig"=>"oceanfloor.zbioirrig",
+                "m", "characteristic depth for bioirrigation (+ve)"),
+        ])
+    else
+        append!(vars, [
+            PB.VarDepColumn("oceanfloor_zbio"=>"oceanfloor.zbio",
+                "m", "characteristic depth for bioturbation and bioirrigation (+ve)"),
+        ])
+    end
 
     funcs = (
         f_bioTurbDepth  =   _get_f_bioDepth(rj.pars.f_bioTurbDepth[]),
@@ -110,10 +126,12 @@ function _get_f_bioDepth(f_bioDepth)
     f_bioDepthDict = Dict(
         "ConstCutoff" => (zmid, zbio) -> -zmid < zbio,
         # Arndt etal (2011) Eq(56) (a guess, typo in paper?)
-        "ErfcCutoff"  => (zmid, zbio) -> 0.5 * erfc(-zmid/zbio - 1.0),
+        "ErfcCutoff"  => (zmid, zbio) -> 0.5 * SpecialFunctions.erfc(-zmid/zbio - 1.0),
         # Boudreau (1996) Eq(99), the 'second biodiffusion function'
         # Archer etal (2002) Eq(14)
-        "ExpCutoff"   => (zmid, zbio) -> exp(-zmid^2/(2.0*zbio^2)),
+        "Exp2Cutoff"   => (zmid, zbio) -> exp(-zmid^2/(2.0*zbio^2)),
+        # Dale (2015) (used for bioirrigation)
+        "Exp1Cutoff"   => (zmid, zbio) -> exp(zmid/zbio), # NB: zmid is -ve here
     )
     haskey(f_bioDepthDict, f_bioDepth) || error("unknown f_bioDepth $f_bioDepth")    
     return f_bioDepthDict[f_bioDepth]    
@@ -124,10 +142,10 @@ function _get_f_bioO2(f_bioO2)
         "None"       => (pars, vars, icol) -> 1.0,
         # Archer etal (2002) Eq. 14
         "MM"         => (pars, vars, icol) 
-                        -> max(vars.oceanfloorO2_conc[icol], 0.0)/(max(vars.oceanfloorO2_conc[icol], 0.0) + pars.bioO2halfmax[]),
+                        -> max(vars.oceanfloor_O2_conc[icol], 0.0)/(max(vars.oceanfloorO2_conc[icol], 0.0) + pars.bioO2halfmax[]),
         # Dale etal (2015)
         "Dale2015"   => (pars, vars, icol) 
-                        -> 0.5 + 0.5*erf((vars.oceanfloorO2_conc[icol] - pars.bioO2halfmax[])/pars.bioO2decreaserate[]),
+                        -> 0.5 + 0.5*SpecialFunctions.erf((vars.oceanfloor_O2_conc[icol] - pars.bioO2halfmax[])/pars.bioO2decreaserate[]),
     )
     haskey(f_bioO2Dict, f_bioO2) || error("unknown f_bioO2 $f_bioO2")    
     return f_bioO2Dict[f_bioO2]    
@@ -165,20 +183,29 @@ function do_sediment_bio_rates(
 )
     
     funcs = m.p
+
+    if pars.separate_zbio[]
+        var_zbioturb = vars.oceanfloor_zbioturb
+        var_zbioirrig = vars.oceanfloor_zbioirrig
+    else
+        var_zbioturb = vars.oceanfloor_zbio
+        var_zbioirrig = vars.oceanfloor_zbio
+    end
     
     for (icol, colindices) in cellrange.columns
         bioTurbRate     = vars.oceanfloor_Dbio[icol] # max rate
         bioIrrigRate    = vars.oceanfloor_alpha[icol]
-        zbio = vars.oceanfloor_zbio[icol]
+        zbioturb = var_zbioturb[icol]
+        zbioirrig = var_zbioirrig[icol]
         bioO2           = funcs.f_bioO2(pars, vars, icol)
 
         @inbounds for i in colindices
 
-            bioTurbDepth    = funcs.f_bioTurbDepth(vars.zmid[i], zbio)
+            bioTurbDepth    = funcs.f_bioTurbDepth(vars.zmid[i], zbioturb)
 
             vars.diff_bioturb[i] = bioTurbRate * bioTurbDepth * bioO2
 
-            bioIrrigDepth   = funcs.f_bioIrrigDepth(vars.zmid[i], zbio)
+            bioIrrigDepth   = funcs.f_bioIrrigDepth(vars.zmid[i], zbioirrig)
 
             vars.alpha_bioirrig[i] = bioIrrigRate * bioIrrigDepth * bioO2
 

@@ -7,18 +7,18 @@ using Plots
 
 import PALEOboxes as PB
 import PALEOmodel
+import PALEOaqchem
 import PALEOsediment
-
-do_benchmarks = false
 
 global_logger(ConsoleLogger(stderr,Logging.Info))
 
 include("config_sediment_expts.jl")
 include("../plot_sediment.jl")
 
+
 model = PB.create_model_from_config(
-    joinpath(@__DIR__, "PALEO_examples_sediment_ironsulphur_cfg.yaml"), 
-    "sediment_Corg_O2_Fe",
+    joinpath(@__DIR__, "PALEO_examples_sediment_cfg.yaml"), 
+    "sediment_Corg_O2_carb",
 )
 
 #############################
@@ -36,6 +36,7 @@ tspan=(0.0, 10000.0)
 initial_state, modeldata = PALEOmodel.initialize!(model)
 
 run = PALEOmodel.Run(model=model, output = PALEOmodel.OutputWriters.OutputMemory())
+
 
 # PTC, Newton, no line search
 # Bounds and max step size for Newton solve. NB some tracers start at zero so set newton_max_ratio=Inf
@@ -56,7 +57,6 @@ PALEOmodel.SteadyState.steadystate_ptcForwardDiff(
 ) 
 
 
-
 ############################
 # Plot 
 ############################
@@ -67,12 +67,12 @@ PALEOmodel.SteadyState.steadystate_ptcForwardDiff(
 
 # multiple plots per screen
 gr(size=(900, 600))
-pager = PALEOmodel.PlotPager((1,3), (legend_background_color=nothing, margin=(5, :mm)))
+pager = PALEOmodel.PlotPager((1,3), (legend_background_color=nothing, ))
 
-plot_Corg_O2(run.output; Corgs=["Corg1", "Corg2"], colT=[first(tspan), last(tspan)], pager=pager)
-plot_solutes(run.output; colT=[first(tspan), last(tspan)], solutes=["P", "SO4", "H2S", "CH4", "FeII"], pager=pager)
-plot_solids(run.output; colT=[first(tspan), last(tspan)], solids=["FeHR", "FeMR", "FePR"], pager=pager)
-plot_rates(run.output; colT=[first(tspan), last(tspan)], remin_rates=["reminOrgOxO2", "reminOrgOxFeIIIOx", "reminOrgOxSO4", "reminOrgOxCH4"], pager=pager)
+plot_Corg_O2(run.output; Corgs=["Corg1", "Corg2"], colT=[first(tspan), last(tspan)], pager)
+plot_solutes(run.output; solutes = ["P", "SO4", "H2S", "CH4", "DIC", "TAlk"], colT=[first(tspan), last(tspan)], pager)
+plot_rates(run.output; colT=[first(tspan), last(tspan)], pager=pager)
+plot_carbchem(run.output; include_constraint_error=true, colT=last(tspan), pager)
 
 pager(:newpage)
 

@@ -34,5 +34,22 @@ Summary plots show oceanfloor solute fluxes and remineralization pathways:
 
     julia> include("PALEO_examples_sediment_Sisotopes.jl")
 
-three sediment column example as `PALEO_examples_sediment.jl`, with sulphur isotopes enabled and low (1 mM) oceanfloor [SO4]
+Three sediment column example as `PALEO_examples_sediment.jl`, with sulphur isotopes enabled and low (1 mM) oceanfloor [SO4]
 to illustrate Rayleigh fractionation within the sediment column as [SO4] becomes limiting.
+
+# Carbonate chemistry example
+
+    julia> include("PALEO_examples_sediment_carb.jl")
+
+Three sediment column example as `PALEO_examples_sediment.jl`, with carbonate chemistry.
+
+NB: POC includes C, P only (no N) to simplify TAlk conservation check (where `soluteflux_TAlk = 2*soluteflux_H2S`)
+
+    julia> PALEOmodel.get_array(run.output, "fluxOceanfloor.soluteflux_TAlk", (cell=1, tmodel=1e12)).values
+    0.014436958064622729
+
+    julia> PALEOmodel.get_array(run.output, "fluxOceanfloor.soluteflux_H2S", (cell=1, tmodel=1e12)).values
+    0.007218479032309767
+
+    julia> PALEOmodel.get_array(run.output, "fluxOceanfloor.soluteflux_SO4", (cell=1, tmodel=1e12)).values
+    -0.0072184790322306815

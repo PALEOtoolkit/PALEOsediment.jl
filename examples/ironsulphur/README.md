@@ -69,6 +69,25 @@ Demonstrates (cf van de Velde & Meysman (2016)):
 Boudreau (1996) test cases with Corg, O2, SO4/H2S, P, Fe-S and pyrite burial.
 Three columns: shelf/slope,  rise, rise (no bioturbation)
 
+POC stoichiometry Corg, P only (no N) to simplify test of alkalinity budget, ie
+check alkalinity flux from SO4 and FeII solute fluxes = soluteflux_TAlk (as solid phase inputs and
+output make no contribution to alkalinity budget).
+
+    julia> PALEOmodel.get_array(run.output, "fluxOceanfloor.soluteflux_SmIIaqtot", (cell=1, tmodel=1e12)).values
+    0.00021099944013347013
+
+    julia> PALEOmodel.get_array(run.output, "fluxOceanfloor.soluteflux_SO4", (cell=1, tmodel=1e12)).values
+    -0.0745449641168272  # net sulphate input balanced by FeS / FeS2 burial
+
+    julia> PALEOmodel.get_array(run.output, "fluxOceanfloor.soluteflux_FeIIaqtot", (cell=1, tmodel=1e12)).values
+    0.0012053409002682764
+
+    julia> PALEOmodel.get_array(run.output, "fluxOceanfloor.soluteflux_TAlk", (cell=1, tmodel=1e12)).values
+    0.15150061203704088
+
+    julia> -2*-0.0745449641168272 + 2*0.0012053409002682764
+    0.15150061003419096 # check alkalinity flux from SO4 and FeII fluxes = soluteflux_TAlk
+
 ## Test case with Fe only, no Fe-S or pyrite burial
 
     julia> include("PALEO_examples_sediment_Fe.jl")
@@ -78,13 +97,13 @@ Three columns: shelf/slope,  rise, rise (no bioturbation)
 
 # References
 
-- Canfield & Farquar (2009) PNAS https://10.1073/pnas.0902037106
-- Habicht etal (2002) Science https://10.1126/science.1078265
-- Poulton & Canfield (2011) Elements https://10.2113/gselements.7.2.107
-- Rickard (2006) GCA https://10.1016/j.gca.2006.02.029
-- Rickard and Luther (2007) Chemical Reviews https://dx.doi.org/10.1021/cr0503658
-- Lenton and Daines (2017) Ann. Rev. Mar. Sci. https://dx.doi.org/10.1146/annurev-marine-010816-060521
-- van de Velde & Meysman (2016) Aquatic Geochem. https://dx.doi.org/10.1007/s10498-016-9301-7
-- van de Velde etal (2021) GMD https://dx.doi.org/10.5194/gmd-14-2713-2021
-- Dale etal (2015) GBC https://dx.doi.org/10.1002/2014GB005017
-- Van Cappellen & Wang Am J Sci (1996) https://dx.doi.org/10.2475/ajs.296.3.197
+- Canfield & Farquar (2009) PNAS <https://dx.doi.org/10.1073/pnas.0902037106>
+- Habicht etal (2002) Science <https://dx.doi.org/10.1126/science.1078265>
+- Poulton & Canfield (2011) Elements <https://dx.doi.org/10.2113/gselements.7.2.107>
+- Rickard (2006) GCA <https://dx.doi.org/10.1016/j.gca.2006.02.029>
+- Rickard and Luther (2007) Chemical Reviews <https://dx.doi.org/10.1021/cr0503658>
+- Lenton and Daines (2017) Ann. Rev. Mar. Sci. <https://dx.doi.org/10.1146/annurev-marine-010816-060521>
+- van de Velde & Meysman (2016) Aquatic Geochem. <https://dx.doi.org/10.1007/s10498-016-9301-7>
+- van de Velde etal (2021) GMD <https://dx.doi.org/10.5194/gmd-14-2713-2021>
+- Dale etal (2015) GBC <https://dx.doi.org/10.1002/2014GB005017>
+- Van Cappellen & Wang Am J Sci (1996) <https://dx.doi.org/10.2475/ajs.296.3.197>
