@@ -458,8 +458,7 @@ sediment_Corg_O2_carb:
 
                 reservoir_TAlk:
                     class: ReactionReservoirTotal
-                    parameters:
-                        field_data: external%CIsotope
+                    
                     variable_links:
                         R*:                             TAlk*
                         volume:                         volume_solute

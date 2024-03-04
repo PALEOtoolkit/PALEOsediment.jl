@@ -28,11 +28,10 @@ config_sediment_expts(model,
     [
         "baseline",
         # Fe-S system
-        # ("set_par", "ocean", "FeSm", "rate_FeS_prec", 0.0), # zero rate (disable) for FeS precipitation
-        # ("set_par", "ocean", "FeSm", "rate_FeS_diss", 0.0), # zero rate (disable) for FeS dissolution
-        # Pyrite formation rate (NB: balances SO4_input so set that to zero if disabling pyrite formation)
+        # Pyrite formation rate
         # ("set_par", "sediment", "PyrH2S", "R_Pyr_H2S", 0.0), # zero rate (disable) pyrite formation
         ("set_par", "sediment", "PyrH2S", "R_Pyr_H2S", 1e2), # 1e5 M yr-1 = 1e5*1e-3 (mol m-3) yr-1, Dale (2015)
+        # Pyrite oxidation rate
         ("set_par", "sediment", "redox_FeS2pyr_O2", "R_FeS2pyr_O2",  1.0),  # (mol m-3)-1 yr-1,  1e3 M-1 yr-1 = 1e3*1e-3, Dale (2015)
         # ("set_par", "sediment", "redox_FeS2pyr_O2", "R_FeS2pyr_O2",  0.0), # disable pyrite oxidation
         #
