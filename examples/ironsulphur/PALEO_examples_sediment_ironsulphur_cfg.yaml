@@ -578,9 +578,7 @@ sediment_Corg_O2_Fe_pyr_carb:
                         R_conc:diffusivity_speciesname: HCO3 # use for molecular diffusivity HCO3- as the major species
 
                 reservoir_TAlk:
-                    class: ReactionReservoirTotal
-                    parameters:
-                        field_data: external%CIsotope
+                    class: ReactionReservoirTotal                    
                     variable_links:
                         R*:                             TAlk*
                         volume:                         volume_solute

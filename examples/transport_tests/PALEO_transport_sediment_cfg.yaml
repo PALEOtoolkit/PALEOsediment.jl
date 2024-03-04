@@ -1,5 +1,5 @@
 ####################################
-# Abiotic sediment, O2 only
+# Abiotic sediment, Corg and O2 only
 ####################################
 sediment_abiotic_O2:
     parameters:
@@ -84,10 +84,7 @@ sediment_abiotic_O2:
                         input_fluxes:         fluxOceanfloor.particulateflux_$fluxname$
                         output_fluxes:        sediment.oceanfloor.$fluxname$_sms
                     variable_links:           
-                        
-
-        ocean:  # dummy Domain to suppress error from fluxOceanfloor
-            
+                
 
         sediment:
             reactions:
@@ -104,15 +101,16 @@ sediment_abiotic_O2:
                         w_solute:                      true  # w_solute = w_solid at base of column
                        
                 reservoir_O2:
-                    class: ReactionReservoirTotal            
+                    class: ReactionReservoirConcTotal            
                     variable_links:
                         R*:                             O2*
                         volume:                         volume_solute
                     variable_attributes:
                         R_conc:vphase:                  VP_Solute                    
-                        R:initial_value:                0.0  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
-                        R:norm_value:                   200e-3                        
+                        R_conc:initial_value:                0.0  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
+                        R_conc:norm_value:                   200e-3                        
                         R_conc:diffusivity_speciesname: O2 # 2e-5 # cm^2/s approx constant
+                        # R_conc:gamma:                   0.5 # test value for reading bioirrigation coeff (O2 should usually be 1.0)
 
                 reservoir_Corg:
                     class: ReactionReservoirTotal            
@@ -129,8 +127,6 @@ sediment_abiotic_O2:
     
         sedimentfloor:
             reactions:
-
-        sedcrust: # dummy Domain to suppress error from fluxOceanBurial
-            
+           
 
 

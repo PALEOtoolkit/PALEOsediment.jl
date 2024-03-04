@@ -1,0 +1,168 @@
+################################################################
+# Test of Corg multi-G reactive continuum approximation
+# (no redox reactions)
+################################################################
+sediment_abiotic_O2:
+    parameters:
+        num_columns: 4
+        CIsotope: ScalarData
+    domains:
+        global:
+            # scalar domain
+     
+        fluxOceanfloor:
+            reactions:
+                floorstubparticulateflux:
+                    class: ReactionFluxTarget
+                    parameters:
+                        const_stub: true
+                        target_prefix: particulateflux_
+                        fluxlist: ["Corg::CIsotope"]
+
+
+                    variable_attributes:
+                        #                               Dale (2015) test cases
+                        #                                   shelf   shelf       slope   slope
+                        #                                 
+                        #                                    9.4    9.4         3       3       mmol/m^2/d
+                        particulateflux_Corg:initial_value: [3.43,  3.43,       1.10,   1.10] # mol/column/yr-1
+                        particulateflux_Corg:initial_delta: -25.0
+
+                floorstubsoluteflux:
+                    class: ReactionFluxTarget
+                    parameters:
+                        target_prefix: soluteflux_
+                        fluxlist: ["O2", "DIC::CIsotope"]
+
+
+        fluxOceanBurial:       
+            reactions:
+                burialfluxes:
+                    class: ReactionFluxTarget
+                    parameters:
+                        target_prefix: flux_
+                        fluxlist: ["Corg_1::CIsotope", "Corg_2::CIsotope", "Corg_3::CIsotope", "Corg_4::CIsotope", "Corg_5::CIsotope", "Corg_6::CIsotope", "Corg_7::CIsotope", "Corg_8::CIsotope", "Corg_9::CIsotope", "Corg_10::CIsotope", "Corg_11::CIsotope", "Corg_12::CIsotope", "Corg_13::CIsotope", "Corg_14::CIsotope" ]
+                
+                total_Corg: # add up the multi-G fractions -> flux_Corg
+                    class: ReactionVectorSum
+                    parameters:
+                        vars_prefix: flux_                        
+                        vars_to_add: ["Corg_1", "Corg_2", "Corg_3", "Corg_4", "Corg_5", "Corg_6", "Corg_7", "Corg_8", "Corg_9", "Corg_10", "Corg_11", "Corg_12", "Corg_13", "Corg_14" ]
+                    variable_links:
+                        sum: flux_Corg
+ 
+        oceanfloor:
+
+            reactions:
+                grid:
+                    class: ReactionUnstructuredVectorGrid
+                    parameters:
+                        ncells: external%num_columns
+
+                floorstubphys: 
+                    class: ReactionConst
+                    parameters:
+                        constnames: ["Afloor", "zfloor", "temp", "sal", "phi", "phimin", "w_accum", "zbioturb", "zbioirrig", "Dbio", "alpha"]
+                    variable_attributes:
+                        #                       Dale (2015) test cases
+                        #                       shelf       shelf       slope       slope
+                        Afloor:initial_value:   [1.0,       1.0,        1.0,        1.0] # m^2 column area
+                        zfloor:initial_value:   [-100.0,    -100.0,    -600.0,      -600.0] # m
+                        temp:initial_value:     [283.15,    283.15,     281.15,     281.15]  # K
+                        sal:initial_value:      35.0 # psu
+                        phi:initial_value:      0.9 # surface porosity
+                        phimin:initial_value:   0.7 # minimum porosity
+                        w_accum:initial_value:  [100e-5,   100e-5,      16e-5,      16e-5]  # m yr-1 (100, 16 cm kyr-1)
+                        zbioturb:initial_value:  0.03  # m, 3 cm bioturbation characteristic depth
+                        zbioirrig:initial_value: [0.02,     0.02,       0.0075,     0.0075] # m biorrigation characteristic depth
+                        Dbio:initial_value:     [28e-4,     28e-4,      18e-4,      18e-4] # m^2 yr-1 (28, 16 cm^2 yr-1)
+                        alpha:initial_value:    [465.0,     465.0,      114.0,      114.0] # yr-1 bioirrigation coefficient at surface
+
+                floorstubsoluteconc: 
+                    class: ReactionConst
+                    parameters:
+                        constnames: ["O2_conc", "DIC_conc::CIsotope"]
+                    variable_attributes:
+                        #                       Dale (2015) test cases
+                        #                       shelf       shelf       slope       slope
+                        O2_conc:initial_value:   [0.200,    0.001,      0.200,      0.001]  # (mol m-3)
+                        DIC_conc:initial_value:  2.0  # (mol m-3) 2000 uM
+                        DIC_conc:initial_delta:  0.0
+
+                transfer_particulateflux_sedimentsurface:
+                    class: ReactionFluxTransfer
+                    parameters:
+                        transfer_matrix:      Identity
+                        input_fluxes:         fluxOceanfloor.particulateflux_$fluxname$
+                        output_fluxes:        sediment.oceanfloor.$fluxname$_sms
+                    variable_links:           
+                        # output_Corg:  Corg_notused  # ReactionRCmultiG handles this itself to distribute to multiple reactivity fractions
+
+        sediment:
+            reactions:
+                bioratesed:
+                    class: ReactionSedimentBioRates
+                    parameters:
+                        f_bioTurbDepth:         Exp2Cutoff
+                        f_bioIrrigDepth:        Exp1Cutoff
+                        separate_zbio:          true
+                        f_bioO2:                Dale2015 
+                        bioO2halfmax:           20e-3 # (mol m-3) (Dale 2015 'a', 20 uM)
+                        bioO2decreaserate:      12e-3 # (mol m-3) (Dale 2015 'b', 12 uM)
+
+                transportsed:
+                    class: ReactionSedimentTransport
+                    parameters:
+                        L:                              0.30  # (m) column length
+                        ncellspercol:                   100
+                        f_grid:                         quadratic
+                        grid_eta:                       0.075
+                        zdbl:                           0.04e-2  # diffusive boundary layer at sediment-water interface
+                        f_porosity:                     ExpAtten # 
+                        zpor:                           0.1 # (m) lengthscale for porosity decrease
+                        w_solute:                       true  # include solute advection (w_solute = w_solid at base of column)
+                       
+                reservoir_O2:
+                    class: ReactionReservoirTotal            
+                    variable_links:
+                        R*:                             O2*
+                        volume:                         volume_solute
+                    variable_attributes:
+                        R_conc:vphase:                  VP_Solute                    
+                        R:initial_value:                0.0  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
+                        R:norm_value:                   200e-3                        
+                        R_conc:diffusivity_speciesname: O2 # 2e-5 # (cm^2/s) approx constant
+
+                reservoir_DIC:
+                    class: ReactionReservoirTotal
+                    parameters:
+                        field_data: external%CIsotope
+                    variable_links:
+                        R*:                             DIC*
+                        volume:                         volume_solute
+                    variable_attributes:
+                        R_conc:vphase:                  VP_Solute                    
+                        R:initial_value:                0.0  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
+                        R:norm_value:                   2000e-3                        
+                        R_conc:diffusivity_speciesname: HCO3 # use for molecular diffusivity HCO3- as the major species
+
+                reservoir_Corg:
+                    class: ReactionRCmultiG
+                    parameters:
+                        #                   1     2    3      4    5      6     7     8     9     10    11   12   13   14
+                        k_bin_edges:        [1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e0, 1e1, 1e2] #  yr-1
+                        k_dist_modifier: [1.0,   1.0, 1.0,   1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0, 1.0,  1.0, 1.0]
+                        a: 3e-4 # yr-1  reactive-continuum model average lifetime
+                        v: 0.125 # reactive-continuum model shape parameter
+                        field_data: external%CIsotope
+
+                    variable_links:
+                        volume:                         volume_solid
+                        POC_decay:                      DIC_sms  # dump all Corg -> DIC for test case
+
+                    variable_attributes:
+                        Corg_*_conc:vphase:             VP_Solid
+    
+    
+        sedimentfloor:
+

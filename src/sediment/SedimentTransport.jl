@@ -7,6 +7,7 @@ import PALEOaqchem
 
 import LinearAlgebra
 import SparseArrays
+import Printf
 
 import Infiltrator # julia debugger
 
@@ -91,6 +92,8 @@ Base.@kwdef mutable struct ReactionSedimentTransport{P} <: PB.AbstractReaction
     domain_fluxOceanfloor::Union{PB.Domain, Nothing}   = nothing
     domain_sedimentfloor::Union{PB.Domain, Nothing}    = nothing
     domain_fluxOceanBurial::Union{PB.Domain, Nothing}  = nothing
+
+    solute_gammas::Vector{Float64} = Float64[]
 
 end
 
@@ -410,6 +413,15 @@ function PB.register_dynamic_methods!(rj::ReactionSedimentTransport)
         vars_solute_totaldiff,
     ) = find_solute_vars(rj.domain)
 
+     # read solute variable attributes
+     PB.add_method_setup!(
+        rj,
+        setup_sediment_transport_solute,
+        (
+            PB.VarList_vector(vars_solute_conc),
+        )
+     )
+
     PB.add_method_do!(
         rj,
         do_sediment_transport_solute,
@@ -549,6 +561,41 @@ function prepare_do_sediment_transport_solute(m::PB.ReactionMethod, vardata)
     return (vardata..., Tuple(diff_fns))
 end
 
+function setup_sediment_transport_solute(
+    m::PB.ReactionMethod,
+    pars,
+    (
+        vars_solute_conc,
+    ),
+    cellrange::PB.AbstractCellRange,
+    attribute_name,
+)
+    attribute_name == :setup || return
+    rj = m.reaction
+
+    io = IOBuffer()
+    println(io, "setup_sediment_transport_solute $(PB.fullname(rj)) ReactionSedimentTransport")
+
+    # Vector of VariableReactions corresponding to the (vars_solute_conc,) data arrays
+    (rvars_solute_conc, ) = PB.get_variables_tuple(m)
+
+    Printf.@printf(io, "    %20s%20s\n", "Variable", "gamma")
+    empty!(rj.solute_gammas)
+    for rv_sc in rvars_solute_conc
+        domvar = rv_sc.linkvar # read attribute from linked Domain variable 
+        gamma = coalesce(PB.get_attribute(domvar, :gamma, missing), 1.0) # either attribute not present, or present with value missing -> 1.0        
+        Printf.@printf(io, "    %20s%20g\n", PB.fullname(domvar), gamma)
+        if !isa(gamma, Float64)
+            @info String(take!(io))
+            error("read invalid value $gamma ($(typeof(gamma)) from $(PB.fullname(domvar))")
+        end
+        push!(rj.solute_gammas, gamma)
+    end
+
+    @info String(take!(io))
+
+    return nothing
+end
 
 function do_sediment_transport_solute(
     m::PB.ReactionMethod,
@@ -567,6 +614,7 @@ function do_sediment_transport_solute(
     cellrange::PB.AbstractCellRange,
     deltat
 )
+    rj = m.reaction
 
     PB.IteratorUtils.foreach_longtuple_p(
         calc_solute_total_diffusivity,
@@ -589,6 +637,7 @@ function do_sediment_transport_solute(
         vars_solute_oceanfloor_conc,
         vars_solute_fluxOceanfloor,
         vars_solute_totaldiff,
+        rj.solute_gammas,
         (
             pars.zdbl[],
             grid_vars,
@@ -662,6 +711,7 @@ function calc_solute_transport(
     solute_oceanfloor_conc,
     solute_fluxOceanfloor,
     solute_totaldiff,
+    solute_gamma,
     (
         zdbl,
         grid_vars,
@@ -694,7 +744,7 @@ function calc_solute_transport(
 
         calc_irrigate_column(
             phys_vars.volume_solute,
-            bio_vars.alpha_bioirrig, solute_conc, solute_sms,
+            bio_vars.alpha_bioirrig, solute_gamma, solute_conc, solute_sms,
             solute_oceanfloor_conc, solute_fluxOceanfloor,
             icol, colindices
         )
@@ -833,14 +883,14 @@ end
 "calculate bioirrigation fluxes for a single column"
 function calc_irrigate_column(
     vol,
-    alpha, conc, sms,
+    alpha, solute_gamma, conc, sms,
     ub_conc, ub_fluxout,
     icol, colindices
 )
 
     for i in colindices
     # mol yr-1   yr-1   mol m-3                 m^3
-        flux = alpha[i]*(ub_conc[icol] - conc[i])*vol[i]
+        flux = solute_gamma*alpha[i]*(ub_conc[icol] - conc[i])*vol[i]
         sms[i] += flux
         ub_fluxout[icol] -= flux
     end
