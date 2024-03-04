@@ -1,6 +1,6 @@
 # PALEOsediment Reactions
 
-## Sediment
+## Sediment transport
 ```@meta
 CurrentModule = PALEOsediment.Sediment
 ```

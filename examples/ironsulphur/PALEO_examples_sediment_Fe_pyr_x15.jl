@@ -13,7 +13,7 @@ import PALEOsediment
 global_logger(ConsoleLogger(stderr,Logging.Info))
 
 include("config_sediment_expts.jl")
-include("plot_sediment.jl")
+include("../plot_sediment.jl")
 
 ###############################################################################
 # Set of 15 columns, all with same shelf environment, Corg input with two reactivity fractions 
@@ -27,7 +27,7 @@ include("plot_sediment.jl")
 num_columns=15
 model = PB.create_model_from_config(
     joinpath(@__DIR__, "PALEO_examples_sediment_ironsulphur_cfg.yaml"), 
-    "sediment_Corg_O2_Fe_pyr";
+    "sediment_Corg_O2_Fe_pyr_carb";
     modelpars=Dict("num_columns"=>num_columns),
 )
 
@@ -136,11 +136,12 @@ colrange=1:num_columns # number of columns
 # check numerics: DAE constraint variables ~0
 #  plot_tracers(run.output; colT=[1.0, last(tspan)], tracers=["SmIIaqtot_constraint", "FeIIaqtot_constraint"], colrange, pager=pager)
 
-plot_Corg_O2(run.output; Corgs=["Corg1", "Corg2"], colT=[first(tspan), last(tspan)], colrange, pager=pager)
-plot_solutes(run.output; colT=[first(tspan), last(tspan)], solutes=["P", "SO4", "SmIIaqtot", "CH4", "H2", "FeIIaqtot"], colrange, pager=pager)
-plot_sediment_FeS_summary(run.output; colrange, pager=pager)
-plot_solids(run.output; colT=[first(tspan), last(tspan)], solids=["FeHR", "FeMR", "FePR", "FeSm", "FeS2pyr"], colrange, pager=pager)
-plot_rates(run.output; colT=[first(tspan), last(tspan)], remin_rates=["reminOrgOxO2", "reminOrgOxFeIIIOx", "reminOrgOxSO4", "reminOrgOxCH4"], colrange, pager=pager)
+plot_Corg_O2(run.output; Corgs=["Corg1", "Corg2"], colT=[first(tspan), last(tspan)], colrange, pager)
+plot_solutes(run.output; colT=[first(tspan), last(tspan)], solutes=["P", "SO4", "SmIIaqtot", "CH4", "H2", "FeIIaqtot"], colrange, pager)
+plot_sediment_FeS_summary(run.output; colrange, pager)
+plot_solids(run.output; colT=[first(tspan), last(tspan)], solids=["FeHR", "FeMR", "FePR", "FeSm", "FeS2pyr"], colrange, pager)
+plot_rates(run.output; colT=[first(tspan), last(tspan)], remin_rates=["reminOrgOxO2", "reminOrgOxFeIIIOx", "reminOrgOxSO4", "reminOrgOxCH4"], colrange, pager)
+plot_carbchem(run.output; include_constraint_error=true, colT=last(tspan), colrange, pager)
 
 pager(:newpage)
 

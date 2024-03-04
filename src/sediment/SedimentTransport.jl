@@ -354,9 +354,9 @@ function do_sediment_phys(
             phys_vars.phi[colindices] .= oceanfloor_vars.oceanfloor_phi[icol]
         elseif pars.f_porosity[] == "ExpAtten"
             # exponential decline from surface to depth with lengthscale zpor
-            phys_vars.phi[colindices] .= ((oceanfloor_vars.oceanfloor_phi[icol] .+
+            phys_vars.phi[colindices] .= ((oceanfloor_vars.oceanfloor_phimin[icol] .+
                 (oceanfloor_vars.oceanfloor_phi[icol] - oceanfloor_vars.oceanfloor_phimin[icol])
-                .*exp.(grid_vars.zmid[colindices]./pars.zpor[])))
+                .*exp.(@view(grid_vars.zmid[colindices])./pars.zpor[])))
         else
             error("unknown f_porosity='$(pars.f_porosity[])'")
         end
@@ -374,7 +374,7 @@ function do_sediment_phys(
                                 (1.0 - phys_vars.phi[first(colindices)]) / (1.0 - phys_vars.phi[i]))
 
             # tortuoisity-dependent multiplier for diffusivity
-            phys_vars.Dfac[i]  = 1.0 /(1.0 - log.(phys_vars.phi[i]^2))  # Boundreau (1996) formulation
+            phys_vars.Dfac[i]  = 1.0 /(1.0 - log(phys_vars.phi[i]^2))  # Boundreau (1996) formulation
 
         end
 
@@ -382,7 +382,7 @@ function do_sediment_phys(
             # solute advection velocity, assuming solute is comoving with solid at base of column
             phi_floor = phys_vars.phi[last(colindices)]
             w_solute_floor = phys_vars.w_solid[last(colindices)]                
-            phys_vars.w_solute[colindices] .= (w_solute_floor * phi_floor) ./ phys_vars.phi[colindices]
+            phys_vars.w_solute[colindices] .= (w_solute_floor * phi_floor) ./ @view(phys_vars.phi[colindices])
         else
             # no solute advection
             phys_vars.w_solute[colindices] .= 0.0 # assume zero flux at great depth
