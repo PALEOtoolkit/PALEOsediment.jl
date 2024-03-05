@@ -55,8 +55,13 @@ Set of 15 columns, all with same shelf environment, Corg input with two reactivi
 - Columns 6-10 with [SO4] 28 mM (high modern value), decreasing values of [O2], no bioturbation
 - Columns 11-15 with zero [O2], no bioturbation decreasing values of [SO4]
 
+Parameters for Fe cycle modified to create a high Fe test case, and increase FeS2pyr oxidation
+- FeHR input ~0.6 mol m-2 yr-1 (comparable to Van Cappellen & Wang 1996 test case, ~x10 higher than a standard modern shelf value?)
+- decrease FeMR limiting concentration for remineralization by x2 vs Van Cappellen & Wang 1996 value (NB: the "Monod" inhibition here is not the same as the linear form they used)
+- increase FeS2pyr oxidation rate constant x10
+
 Demonstrates (cf van de Velde & Meysman (2016)):
-- Pyrite oxidation with modern [O2] and bioturbated sediment resulting in (2*FeS2)/(S reduction) of ~0.085, increases once [O2] drops below ~100 uM,
+- Pyrite oxidation with modern [O2] and bioturbated sediment resulting in (2*FeS2)/(S reduction) of ~0.1, increases once [O2] drops below ~100 uM,
   cf Canfield & Farquar (2009)
 - (non bioturbated oxic sediment with modern [O2] stays mostly oxic with little S reduction hence low pyrite burial)
 - Zero oxygen (and non bioturbated) sediment shows high SR, (2*FeS2)/(S reduction) of ~0.5 hence high pyrite burial until  [SO4] drops to ~100uM

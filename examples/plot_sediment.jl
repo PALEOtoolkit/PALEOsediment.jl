@@ -117,6 +117,31 @@ function plot_solutes(
     return nothing
 end
 
+function plot_conc_summary(
+    output;
+    species=["P", "SO4", "H2S", "CH4"],
+    xlims=(0, Inf),
+    xscale=:identity,
+    colT=1e12,
+    colrange=1:3,
+    pager=PALEOmodel.DefaultPlotPager(),
+)
+    
+    species_vars = "sediment.".*species.*"_conc"
+    for icol in colrange
+        pager(
+            plot(
+                title="concentrations $icol t=$colT (yr)", output, species_vars, (tmodel=colT, column=icol); 
+                legend=:bottomleft, labellist=copy(species), xlabel="conc (mol m-3)", swap_xy=true, xscale, xlims,
+            )
+        )
+    end
+
+    pager(:newpage)
+
+    return nothing
+end
+
 function plot_solute_deltas(
     output;
     solutes=["SO4", "H2S"],
@@ -207,39 +232,52 @@ function plot_tracers(
     return nothing
 end
 
+"""
+    normalize_by_volume(rate_var, volume_var) -> rate_var / volume_var
+
+Convert per-cell rate (mol yr-1) to `rate_var / volume_var` (mol m-3 yr-1)
+"""
+function normalize_by_volume(rate_var::PALEOmodel.FieldArray, volume_var::PALEOmodel.FieldArray)
+    return PALEOmodel.FieldArray(rate_var.name*" / volume", rate_var.values./volume_var.values, rate_var.dims, rate_var.attributes)
+end
+
 
 function plot_rates(
     output;
     remin_rates=["reminOrgOxO2", "reminOrgOxSO4", "reminOrgOxCH4"],
-    colT=[-1e12, 0.1, 1.0, 10.0, 100.0, 1000.0, 1e12],
+    colT=1e12,
     colrange=1:3,
     pager=PALEOmodel.DefaultPlotPager(),
 )
 
     for icol in colrange
-        pager(
-            plot(
-                title="Corg remin rate $icol",
-                output,
-                ["sediment.remin_Corg"],
-                (tmodel=colT, column=icol),
-                xlabel="remin (mol Corg yr-1)",
-                swap_xy=true
-            )
-        )
+        p = plot()
+        # remin_Corg at each time
+        for t in colT
+            volume = PALEOmodel.get_array(output, "sediment.volume", (tmodel=t, column=icol))
+            remin_Corg = PALEOmodel.get_array(output, "sediment.remin_Corg", (tmodel=t, column=icol))
+            remin_Corg_norm = normalize_by_volume(remin_Corg, volume)
+            plot!(p, remin_Corg_norm; swap_xy=true)
+        end
+
+        plot!(p, title="Corg remin rate $icol", xlabel="remin (mol Corg m-3 yr-1)")
+
+        pager(p)
     end
 
     for icol in colrange
-        pager(
-            plot(
-                title="Org matter ox rate $icol",
-                output, 
-                "sediment.".*remin_rates, 
-                (tmodel=colT[end], column=icol), # only last time
-                xlabel="ox rate (mol O2eq yr-1)",
-                swap_xy=true,
-            )
-        )
+        # remin_rates at last time
+        volume = PALEOmodel.get_array(output, "sediment.volume", (tmodel=last(colT), column=icol))
+        p = plot()
+
+        for r in remin_rates
+            rate = PALEOmodel.get_array(output, "sediment.".*r, (tmodel=last(colT), column=icol))
+            rate_norm = normalize_by_volume(rate, volume)
+            plot!(p, rate_norm; swap_xy=true)
+        end
+        plot!(p; title="Org matter ox rate $icol", xlabel="ox rate (mol O2eq m-3 yr-1)")
+
+        pager(p)
     end
 
 end
@@ -308,3 +346,102 @@ function plot_carbchem(
 
     return nothing
 end
+
+function plot_FeP(
+    output;
+    FeP=["PFeHR_theta", "PFeMR_theta"],
+    colT=[-1e12, 0.1, 1.0, 10.0, 100.0, 1000.0, 1e12],
+    colrange=1:3,
+    pager=PALEOmodel.DefaultPlotPager(),
+)
+   
+    for fp in FeP
+        for icol in colrange
+            pager(plot(title="[$fp] $icol", output, ["sediment.$(fp)"], (tmodel=colT, column=icol), xlabel="$fp P:Fe (mol/mol)", swap_xy=true))
+        end
+    end
+
+    pager(:newpage)
+
+    return nothing
+end
+
+
+function plot_budget(
+    output;
+    name="Mn",
+    solids=["MnHR", "MnMR"],
+    solutes=["MnII"],
+    stoich_factors=Dict(), # eg Dict("Corg"=>1/106) for P:Corg ratio
+    concxscale=:log10, 
+    concxlims=(1e-3, Inf),
+    fluxyscale=:identity, 
+    fluxylims=(-Inf, Inf),
+    colT=last(PALEOmodel.get_array(output, "global.tmodel").values), # model time for column plots
+    colrange=1:3,
+    pager=PALEOmodel.DefaultPlotPager(),
+)
+    # scale by stoich_factors[species] 
+    function scale_stoich(Cconc, species, label)
+        if haskey(stoich_factors, species)
+            sf = stoich_factors[species]
+            Cconc *= sf
+            label *= " * $(round(sf, sigdigits=3))"
+        end
+        return Cconc, label
+    end
+
+    # plot concentrations
+    all_species=vcat(solutes, solids)
+    for icol in colrange
+        p = plot(title="$name concentrations $icol")        
+        for sp in all_species
+            conc = PALEOmodel.get_array(output, "sediment.$(sp)_conc", (column=icol, tmodel=colT))
+            conc, label = scale_stoich(conc, sp, sp)
+            plot!(p, conc; label, swap_xy=true)
+        end
+        plot!(p, xlabel="conc (mol m-3)", xscale=concxscale, xlims=concxlims)
+        pager(p)
+    end
+
+    # plot input/output fluxes and total budget 
+    for icol in colrange
+        tmodel = PALEOmodel.get_array(output, "sediment.tmodel").values
+        total_flux_into_sediment = zeros(length(tmodel))
+        p = plot(title="$name budget $icol")
+        for s in solutes
+            # +ve is sediment -> ocean
+            fluxname = "fluxOceanfloor.soluteflux_$s"
+            solute_flux = PALEOmodel.get_array(output, fluxname, (cell=icol,))
+            solute_flux, label = scale_stoich(solute_flux, s, "-"*fluxname)
+            total_flux_into_sediment .-= solute_flux.values
+            plot!(p, -1*solute_flux; label, linestyle=:dash)
+        end
+        for s in solids
+            # +ve is into sediment
+            fluxname = "fluxOceanfloor.particulateflux_$s"
+            particulate_flux = PALEOmodel.get_array(output, fluxname, (cell=icol,))
+            particulate_flux, label = scale_stoich(particulate_flux, s, fluxname)
+            total_flux_into_sediment .+= particulate_flux.values
+            plot!(p, particulate_flux; label)
+        end
+        for s in solids
+            # +ve is out of sediment
+            fluxname = "fluxOceanBurial.flux_$s"
+            burial_flux = PALEOmodel.get_array(output, fluxname, (cell=icol,))
+            burial_flux, label = scale_stoich(burial_flux, s, "-"*fluxname)
+            total_flux_into_sediment .-= burial_flux.values
+            plot!(p, -1*burial_flux; label)
+        end
+
+        plot!(p, tmodel, total_flux_into_sediment, label="total", color=:black)
+
+        plot!(p, ylabel="$name flux (mol yr-1)", yscale=fluxyscale, ylims=fluxylims)
+        pager(p)
+    end
+    
+    pager(:newpage)
+
+    return nothing
+end
+
