@@ -37,24 +37,11 @@ model = PB.create_model_from_config(
 
 # Fe oxide input 1000 FeT umol/m^2/d, 1/6 to each of FeHR, FeMR, FePR
 # FeT = 0.36525 # mol yr-1 = umol/m^2/d * 1e-6 * area m^2 * 365.25
+# high value 75 umol cm-2 yr-1 FeHR (0.75 mol m-2 yr-1, Van Cappellen 1996 test case)
 FeT = 10*0.36525
 
 config_sediment_expts(model, 
     [
-        "baseline",
-
-        # Fe-S system
-        # ("set_par", "sediment", "FeSm", "rate_FeS_prec", 0.0), # zero rate (disable) for FeS precipitation
-        # ("set_par", "sediment", "FeSm", "rate_FeS_diss", 0.0), # zero rate (disable) for FeS dissolution
-        # Pyrite formation rate (NB: balances SO4_input so set that to zero if disabling pyrite formation)
-        # ("set_par", "sediment", "PyrH2S", "R_Pyr_H2S", 0.0), # zero rate (disable) pyrite formation
-        ("set_par", "sediment", "PyrH2S", "R_Pyr_H2S", 1e2), # 1e5 M yr-1 = 1e5*1e-3 (mol m-3) yr-1, Dale (2015)
-        # ("set_par", "sediment", "PyrH2S", "R_Pyr_H2S", 1e1), # sensitivity test for / x10 value
-        # Pyrite oxidation rate
-        ("set_par", "sediment", "redox_FeS2pyr_O2", "R_FeS2pyr_O2",  1.0),  # (mol m-3)-1 yr-1,  1e3 M-1 yr-1 = 1e3*1e-3, Dale (2015)
-        # ("set_par", "sediment", "redox_FeS2pyr_O2", "R_FeS2pyr_O2",  10.0),  # (mol m-3)-1 yr-1  sensitivity test: x10 pyrite oxidation rate
-        # ("set_par", "sediment", "redox_FeS2pyr_O2", "R_FeS2pyr_O2",  0.0), # disable pyrite oxidation
-
         # physical pars for 10 "shelf" columns
         ("initial_value", "oceanfloor.zfloor", -100.0), # m
         ("initial_value", "oceanfloor.temp", 278.15), # K
@@ -90,7 +77,23 @@ config_sediment_expts(model,
                 10000e-3, 5000e-3, 1000e-3, 100e-3, 0.0
             ]
         ), # mol m-3
-        
+             
+        # Remineralization
+        # sensitivity test for low values for limiting conc
+        # ("set_par", "sediment", "reminsed", "FeIIIOxreminlimit", 250.0), # (mol m-3) default = 100e-6*2.5e6 (100 umol Fe(OH)3 g-1 assuming dry density is 2.5 g/cm^3 (= 2.5e6 g m^-3), Van Cappellen 1996)
+        # ("set_par", "sediment", "reminsed", "FeIIIOxreminlimit", 0.1*250.0), # (mol m-3)
+        ("set_par", "sediment", "reminsed", "FeIIIOxreminlimit", 0.5*250.0), # (mol m-3)
+
+        # Fe-S system
+        # Pyrite formation rate
+        # ("set_par", "sediment", "PyrH2S", "R_Pyr_H2S", 0.0), # zero rate (disable) pyrite formation
+        ("set_par", "sediment", "PyrH2S", "R_Pyr_H2S", 1e2), # 1e5 M yr-1 = 1e5*1e-3 (mol m-3) yr-1, Dale (2015)
+        # ("set_par", "sediment", "PyrH2S", "R_Pyr_H2S", 1e1), # sensitivity test for / x10 value
+        # Pyrite oxidation rate
+        # ("set_par", "sediment", "redox_FeS2pyr_O2", "R_FeS2pyr_O2",  1.0),  # (mol m-3)-1 yr-1,  1e3 M-1 yr-1 = 1e3*1e-3, Dale (2015)
+        ("set_par", "sediment", "redox_FeS2pyr_O2", "R_FeS2pyr_O2",  10.0),  # (mol m-3)-1 yr-1  sensitivity test: x10 pyrite oxidation rate
+        # ("set_par", "sediment", "redox_FeS2pyr_O2", "R_FeS2pyr_O2",  0.0), # disable pyrite oxidation
+
     ]
 ) 
 

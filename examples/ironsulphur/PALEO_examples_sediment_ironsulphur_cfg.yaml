@@ -774,11 +774,12 @@ sediment_Corg_O2_Fe_pyr_carb:
                    
                 reminsed:
                     class: ReactionReminO2_Fe_SO4_CH4
-                    # class: ReactionReminO2_SO4_CH4
 
                     parameters:
-                        SO4reminlimit:  1000.0e-3
-                        FeIIIOxreminlimit: 3.0 # (mol m-3) = 100e-6*3e6 100 umol Fe(OH)3 g-1 assuming dry density is 3 g/cm^3 (= 3e6 g m^-3)
+                        oxreminlimit:       1e-3 # (mol m-3) Dale (2015)
+                        FeIIIOxreminlimit:  250.0 # (mol m-3) = 100e-6*2.5e6 (100 umol Fe(OH)3 g-1 assuming dry density is 2.5 g/cm^3 (= 2.5e6 g m^-3), Van Cappellen 1996)
+                        SO4reminlimit:      500.0e-3 # (mol m-3) Dale (2015)                        
+
 
                     variable_links:
                         FeIIIOx_conc:      FeHR_conc
