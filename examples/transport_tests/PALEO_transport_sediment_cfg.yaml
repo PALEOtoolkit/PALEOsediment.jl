@@ -39,7 +39,7 @@ sediment_abiotic_O2:
                     class: ReactionFluxTarget
                     parameters:
                         target_prefix: flux_
-                        fluxlist: ["Corg"]
+                        fluxlist: ["Corg", "O2"]  # include solutes if ReactionSedimentTransport w_solute = true
                         
  
         oceanfloor:
@@ -101,7 +101,9 @@ sediment_abiotic_O2:
                         w_solute:                      true  # w_solute = w_solid at base of column
                        
                 reservoir_O2:
-                    class: ReactionReservoirConcTotal            
+                    class: ReactionReservoirTotal
+                    parameters:
+                        state_conc: true
                     variable_links:
                         R*:                             O2*
                         volume:                         volume_solute

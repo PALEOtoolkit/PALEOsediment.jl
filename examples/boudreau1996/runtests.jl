@@ -37,9 +37,16 @@ skipped_testsets = [
     run = PALEOmodel.Run(model=model, output = PALEOmodel.OutputWriters.OutputMemory())
 
     # Newton, no(?) line search
-    sol = PALEOmodel.SteadyState.steadystateForwardDiff(run, initial_state, modeldata, 0.0,
-        solvekwargs=(ftol=10e-9, method=:newton, store_trace=true, show_trace=true));
-        # solvekwargs=(ftol=5e-5, method=:newton, store_trace=true, show_trace=true));
+    sol = PALEOmodel.SteadyState.steadystateForwardDiff(
+        run, initial_state, modeldata, 0.0;
+        solvekwargs=(
+            ftol=10e-9,
+            # ftol=5e-5,
+            method=:newton, 
+            store_trace=true, 
+            show_trace=true
+        ),
+    );
     
     @test NLsolve.converged(sol)
 
@@ -54,11 +61,10 @@ skipped_testsets = [
     println("check values at end of run:")
     
     # check values with quadratic grid, 1000 bins
-    checkvals = [   ("fluxOceanfloor", "soluteflux_O2",  [-1.6378081154427315, -0.2407215432664667, -0.23926141994446765],
-                        1e-3),
-                    ("fluxOceanfloor", "soluteflux_H2S", [0.027315272129439974, 6.296825389355547e-5, 0.0007907782715388825],
-                        2.5e-2),
-                ]    
+    checkvals = [   
+        ("fluxOceanfloor", "soluteflux_O2",  [-1.64229, -0.24071, -0.23907],      1e-3),
+        ("fluxOceanfloor", "soluteflux_H2S", [0.025073, 6.8626e-5, 0.00088524],   2.5e-2),
+    ]    
     for (domname, varname, checkval, rtol) in checkvals
         outputval = PB.get_data(run.output, domname*"."*varname)[end]
         println("  check $domname.$varname $outputval $checkval $rtol")

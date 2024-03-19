@@ -142,7 +142,7 @@ colrange=1:num_columns # number of columns
 
 plot_Corg_O2(run.output; Corgs=["Corg1", "Corg2"], colT=[first(tspan), last(tspan)], colrange, pager)
 plot_solutes(run.output; colT=[first(tspan), last(tspan)], solutes=["P", "DIC", "TAlk", "SO4", "SmIIaqtot", "CH4", "H2", "FeIIaqtot"], colrange, pager)
-plot_sediment_FeS_summary(run.output; colrange, pager)
+plot_sediment_FeS_summary(run.output; FeII_species = ["FeIIaqtot", "FeII", "FeSaq",], colrange, pager)
 plot_solids(run.output; colT=[first(tspan), last(tspan)], solids=["FeHR", "FeMR", "FePR", "FeSm", "FeS2pyr"], colrange, pager)
 plot_rates(run.output; colT=[first(tspan), last(tspan)], remin_rates=["reminOrgOxO2", "reminOrgOxFeIIIOx", "reminOrgOxSO4", "reminOrgOxCH4"], colrange, pager)
 plot_carbchem(run.output; include_constraint_error=true, colT=last(tspan), colrange, pager)

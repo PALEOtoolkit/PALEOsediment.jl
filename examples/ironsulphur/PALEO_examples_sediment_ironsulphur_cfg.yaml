@@ -697,17 +697,28 @@ sediment_Corg_O2_Fe_pyr_carb:
                     variable_attributes:
                         R_conc:initial_value: 70.17e-3   # mol m-3  70.17 uM modern F concentration
 
+                # [H+] primary species (as pHfree) for TAlk total
+                # Contributions to alkalinity should be added to TAlk_calc
+                H_primary_species: {class: ReactionConstraintReservoir, 
+                    parameters: {
+                        primary_total_stoich: 0.0, # NB: ReactionCO2SYS adds H to TAlk_calc so don't add here
+                        primary_variable: p_concentration, # provide pHfree as state variable to solver
+                        constraint_variable: amount, # provide TAlk_constraint (mol) as algebraic constraint to solver
+                    },
+                    variable_links: {R*: TAlk*, volume: volume_solute, Primary_pconc: pHfree, Primary_conc: H_conc, primary_volume: volume_solute},
+                    variable_attributes: { Primary_pconc%initial_value: 8.0, Primary_pconc%norm_value: 1e0, R_constraint%initial_value: 1e0, R_constraint%norm_value: 1e0,    
+                    }}
+
                 carbchem:
                     class: ReactionCO2SYS
                     parameters:
                         components: ["Ci", "B", "S", "F", "Omega"] # , "H2S"] no H2S as that is handled by ReactionFeSaq
                         defaultconcs: [] # ["TF", "TB", "Ca"]
-                        solve_pH:   constraint # H as a state variable
-                        outputs:    ["H", "CO2", "HCO3", "CO3", "OmegaCA", "OmegaAR"]
+                        solve_pH:   speciationTAlk # H as a state variable
+                        outputs:    ["CO2", "HCO3", "CO3", "OmegaCA", "OmegaAR"]
                         
                     variable_links:
                         volume: volume_solute
-                        H: H_conc
                         TCi_conc: DIC_conc
                         TS_conc: SO4_conc
                         TAlk_calc: TAlk_calc
