@@ -82,7 +82,7 @@ pager = PALEOmodel.PlotPager((1,3), (legend_background_color=nothing, margin=(5,
 
 plot_Corg_O2(run.output; Corgs=["Corg1", "Corg2"], colT=[first(tspan), last(tspan)], pager=pager)
 plot_solutes(run.output; colT=[first(tspan), last(tspan)], solutes=["P", "SO4", "SmIIaqtot", "CH4", "H2", "FeIIaqtot", "DIC", "TAlk"], pager=pager)
-plot_sediment_FeS_summary(run.output; pager=pager)
+plot_sediment_FeS_summary(run.output; FeII_species = ["FeIIaqtot", "FeII", "FeSaq",], pager=pager)
 plot_solids(run.output; colT=[first(tspan), last(tspan)], solids=["FeHR", "FeMR", "FePR", "FeSm", "FeS2pyr"], pager=pager)
 plot_rates(run.output; colT=[first(tspan), last(tspan)], remin_rates=["reminOrgOxO2", "reminOrgOxFeIIIOx", "reminOrgOxSO4", "reminOrgOxCH4"], pager=pager)
 plot_carbchem(run.output; include_constraint_error=true, colT=last(tspan), pager)

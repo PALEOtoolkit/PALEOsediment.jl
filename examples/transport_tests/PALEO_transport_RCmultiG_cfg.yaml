@@ -41,7 +41,10 @@ sediment_abiotic_O2:
                     class: ReactionFluxTarget
                     parameters:
                         target_prefix: flux_
-                        fluxlist: ["Corg_1::CIsotope", "Corg_2::CIsotope", "Corg_3::CIsotope", "Corg_4::CIsotope", "Corg_5::CIsotope", "Corg_6::CIsotope", "Corg_7::CIsotope", "Corg_8::CIsotope", "Corg_9::CIsotope", "Corg_10::CIsotope", "Corg_11::CIsotope", "Corg_12::CIsotope", "Corg_13::CIsotope", "Corg_14::CIsotope" ]
+                        fluxlist: [
+                            "Corg_1::CIsotope", "Corg_2::CIsotope", "Corg_3::CIsotope", "Corg_4::CIsotope", "Corg_5::CIsotope", "Corg_6::CIsotope", "Corg_7::CIsotope", "Corg_8::CIsotope", "Corg_9::CIsotope", "Corg_10::CIsotope", "Corg_11::CIsotope", "Corg_12::CIsotope", "Corg_13::CIsotope", "Corg_14::CIsotope",
+                            "O2", "DIC::CIsotope", # include solutes if ReactionSedimentTransport w_solute = true
+                        ]
                 
                 total_Corg: # add up the multi-G fractions -> flux_Corg
                     class: ReactionVectorSum

@@ -245,6 +245,7 @@ end
 function plot_rates(
     output;
     remin_rates=["reminOrgOxO2", "reminOrgOxSO4", "reminOrgOxCH4"],
+    plot_freminOrgTot=false,
     colT=1e12,
     colrange=1:3,
     pager=PALEOmodel.DefaultPlotPager(),
@@ -263,6 +264,12 @@ function plot_rates(
         plot!(p, title="Corg remin rate $icol", xlabel="remin (mol Corg m-3 yr-1)")
 
         pager(p)
+    end
+
+    if plot_freminOrgTot
+        for icol in colrange
+            pager(plot(output, "sediment.freminOrgTot", (tmodel=colT, column=icol); title="ox dep rate factor $icol", xlim=(0, Inf), swap_xy=true))
+        end
     end
 
     for icol in colrange
@@ -284,13 +291,14 @@ end
 
 function plot_sediment_FeS_summary(
     output;
+    SmII_species = ["SmIIaqtot", "H2Ssp", "HSm", "FeSaq",],
+    FeII_species = ["FeIIsolutetot", "FeII", "FeSaq", "FeIIadsorb", "FeIItot"],
     colT=last(PALEOmodel.get_array(output, "global.tmodel").values), # model time for column plots
     colrange=1:3,
     pager=PALEOmodel.DefaultPlotPager(),
     plotargs=NamedTuple(),
 )
 
-    SmII_species = ["SmIIaqtot", "H2Ssp", "HSm", "FeSaq",]
     for icol in colrange
         pager(
             plot(title="S-II speciation $icol t=$colT (yr)", output, "sediment.".*SmII_species.*"_conc", 
@@ -299,12 +307,11 @@ function plot_sediment_FeS_summary(
             )
     end
 
-    FeII_species = ["FeIIaqtot", "FeII", "FeSaq",]
     for icol in colrange
         pager(
             plot(title="FeII speciation $icol t=$colT (yr)", output, "sediment.".*FeII_species.*"_conc", 
                 (tmodel=colT, column=icol);
-                swap_xy=true, xlabel="species conc (mol m-3)", labellist=copy(FeII_species), plotargs...)
+                swap_xy=true, xlabel="species conc (mol m-3)", labellist=copy(FeII_species), xscale=:log10, plotargs...)
             )
     end
 
@@ -334,7 +341,7 @@ function plot_carbchem(
     if include_constraint_error
         for icol in colrange
             # DAE constraint (should be ~zero, difference between required and calculated TAlk)
-            pager(plot(title="pHfree_constraint $icol", output, ["sediment.pHfree_constraint"], (tmodel=colT, column=icol), xlabel="mol", swap_xy=true))
+            pager(plot(title="TAlk_constraint $icol", output, ["sediment.TAlk_constraint"], (tmodel=colT, column=icol), xlabel="mol", swap_xy=true))
         end
     end
 
@@ -372,6 +379,8 @@ function plot_budget(
     name="Mn",
     solids=["MnHR", "MnMR"],
     solutes=["MnII"],
+    extras=[],
+    solute_burial_flux=false,
     stoich_factors=Dict(), # eg Dict("Corg"=>1/106) for P:Corg ratio
     concxscale=:log10, 
     concxlims=(1e-3, Inf),
@@ -417,6 +426,16 @@ function plot_budget(
             total_flux_into_sediment .-= solute_flux.values
             plot!(p, -1*solute_flux; label, linestyle=:dash)
         end
+        if solute_burial_flux
+            for s in solutes
+                # +ve is out of sediment
+                fluxname = "fluxOceanBurial.flux_$s"
+                burial_flux = PALEOmodel.get_array(output, fluxname, (cell=icol,))
+                burial_flux, label = scale_stoich(burial_flux, s, "-"*fluxname)
+                total_flux_into_sediment .-= burial_flux.values
+                plot!(p, -1*burial_flux; label)
+            end
+        end
         for s in solids
             # +ve is into sediment
             fluxname = "fluxOceanfloor.particulateflux_$s"
@@ -434,6 +453,14 @@ function plot_budget(
             plot!(p, -1*burial_flux; label)
         end
 
+        for x in extras
+            # +ve is in to sediment
+            x_flux = PALEOmodel.get_array(output, x, (cell=icol,))
+            x_flux, label = scale_stoich(x_flux, x, x)
+            total_flux_into_sediment .+= x_flux.values
+            plot!(p, x_flux; label)
+        end
+
         plot!(p, tmodel, total_flux_into_sediment, label="total", color=:black)
 
         plot!(p, ylabel="$name flux (mol yr-1)", yscale=fluxyscale, ylims=fluxylims)
@@ -445,3 +472,71 @@ function plot_budget(
     return nothing
 end
 
+function plot_summary_stacked(
+    output;
+    species=["P", "SO4", "H2S", "CH4"],
+    others=[],
+    budgets=[],
+    xscale=:identity,
+    xlims=(0, Inf),
+    pHxlims=(-Inf, Inf),
+    oxscale=:identity,
+    oxlims=(0, Inf),
+    budgetylims=(-1e-6, 1e-6),    
+    ylims=(-Inf, Inf),
+    colT=colT=last(PALEOmodel.get_array(output, "global.tmodel").values), # model time for column plots
+    colrange=1:3,
+    pager=PALEOmodel.DefaultPlotPager(),
+)
+    for s in species
+        pager(
+            plot(
+                title="$s t=$colT (yr)", output, "sediment.".*s.*"_conc", (tmodel=colT, column=collect(colrange)); 
+                legend=:bottomleft, labellist=string.(collect(colrange)), xlabel="$s conc (mol m-3)", swap_xy=true, xscale, xlims, ylims,
+            )
+        )
+    end
+
+    for o in others
+        pager(
+            plot(
+                title="$o t=$colT (yr)", output, "sediment.".*o, (tmodel=colT, column=collect(colrange)); 
+                legend=:bottomleft, labellist=string.(collect(colrange)), swap_xy=true, oxscale, oxlims, ylims,
+            )
+        )
+    end
+
+    pager(
+        plot(
+            title="pHfree t=$colT (yr)", output, "sediment.pHfree", (tmodel=colT, column=collect(colrange)); 
+            legend=:bottomleft, labellist=string.(collect(colrange)), xlabel="pH (total)", swap_xy=true, xlims=pHxlims, ylims,
+        )
+    )
+
+    if !isempty(budgets)
+        for i in colrange
+            pager(
+                plot(title="budget check $i", output, budgets, (cell=i,), ylabel="net input (mol yr-1)", ylims=budgetylims)
+            )
+        end
+    end
+
+    return nothing
+end
+
+function plot_budgets(
+    output;
+    budgets=[],
+    ylims=(-1e-6, 1e-6),
+    colrange=1:3,
+    pager=PALEOmodel.DefaultPlotPager(),
+)
+   
+    for i in colrange
+        pager(
+            plot(title="budget check $i", output, budgets, (cell=i,); ylabel="net input (mol yr-1)", ylims)
+        )
+    end
+
+    return nothing
+end

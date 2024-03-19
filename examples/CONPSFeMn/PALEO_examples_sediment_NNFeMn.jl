@@ -102,6 +102,8 @@ colrange=1:4
 gr(size=(1200, 800))
 pager = PALEOmodel.PlotPager((1, 4), (legend_background_color=nothing, margin=(5, :mm)))
 
+solute_burial_flux=true
+
 plot_phi(run.output; colrange, pager)
 plot_w(run.output; colrange, pager)
 plot_biorates(run.output; colrange, pager)
@@ -109,14 +111,18 @@ plot_Corg_O2(run.output; Corgs=["Corg",], colT=[first(tspan), last(tspan)], colr
 plot_Corg_RCmultiG(run.output; colrange, pager)
 plot_solutes(run.output; colT=[first(tspan), last(tspan)], solutes=["P", "DIC", "TAlk", "NO3", "NO2", "NH4", "SO4", "SmIIaqtot", "CH4", "H2", "MnII", "FeIIaqtot"], colrange, pager)
 plot_FeP(run.output; colT=[first(tspan), last(tspan)], colrange, pager)
-plot_sediment_FeS_summary(run.output; colrange, pager)
+plot_sediment_FeS_summary(run.output; FeII_species = ["FeIIaqtot", "FeII", "FeSaq",], colrange, pager)
 plot_solids(run.output; colT=[first(tspan), last(tspan)], solids=["MnHR", "MnMR", "FeHR", "FeMR", "FePR", "FeSm", "FeS2pyr", "PFeHR", "PFeMR", "CFA"], colrange, pager)
 plot_carbchem(run.output; include_constraint_error=true, colT=last(tspan), colrange, pager)
-plot_budget(run.output; name="P", solids=["Corg", "PFeHR", "PFeMR", "CFA"], stoich_factors=Dict("Corg"=>1/106), solutes=["P"], pager, colrange, concxscale=:log10, concxlims=(1e-3, 1e3))
-plot_budget(run.output; name="Mn", solids=["MnHR", "MnMR"], solutes=["MnII"], pager, colrange, concxscale=:log10, concxlims=(1e-3, 1e3))
-plot_budget(run.output; name="Fe", solids=["FeHR", "FeMR", "FePR", "FeSm", "FeS2pyr"], solutes=["FeIIaqtot"], pager, colrange, concxscale=:log10, concxlims=(1e-3, 1e4))
-plot_budget(run.output; name="S", solids=["FeSm", "FeS2pyr"], solutes=["SmIIaqtot", "SO4"], stoich_factors=Dict("FeS2pyr"=>2), pager, colrange, concxscale=:log10, concxlims=(1e-3, 1e4), fluxylims=(-1, 1) )
-plot_rates(run.output; colT=[first(tspan), last(tspan)], remin_rates=["reminOrgOxO2", "reminOrgOxNO2", "reminOrgOxNO3", "reminOrgOxMnIVOx", "reminOrgOxFeIIIOx", "reminOrgOxSO4", "reminOrgOxCH4"], colrange, pager)
+plot_budget(run.output; name="P", solids=["Corg", "PFeHR", "PFeMR", "CFA"], stoich_factors=Dict("Corg"=>1/106), solutes=["P"], solute_burial_flux,
+    pager, colrange, concxscale=:log10, concxlims=(1e-3, 1e3))
+plot_budget(run.output; name="Mn", solids=["MnHR", "MnMR"], solutes=["MnII"], solute_burial_flux,
+    pager, colrange, concxscale=:log10, concxlims=(1e-3, 1e3))
+plot_budget(run.output; name="Fe", solids=["FeHR", "FeMR", "FePR", "FeSm", "FeS2pyr"], solutes=["FeIIaqtot"], solute_burial_flux,
+    pager, colrange, concxscale=:log10, concxlims=(1e-3, 1e4))
+plot_budget(run.output; name="S", solids=["FeSm", "FeS2pyr"], solutes=["SmIIaqtot", "SO4"], stoich_factors=Dict("FeS2pyr"=>2), solute_burial_flux,
+    pager, colrange, concxscale=:log10, concxlims=(1e-3, 1e4), fluxylims=(-1, 1) )
+plot_rates(run.output; colT=[first(tspan), last(tspan)], remin_rates=["reminOrgOxO2", "reminOrgOxNO2", "reminOrgOxNO3NO2", "reminOrgOxMnIVOx", "reminOrgOxFeIIIOx", "reminOrgOxSO4", "reminOrgOxCH4"], colrange, pager)
 plot_conc_summary(run.output; species=["O2", "NO3", "NO2", "NH4", "P", "SmIIaqtot", "FeIIaqtot", "MnII", "CH4"], pager, colrange, xscale=:log10, xlims=(1e-3, 1e0))
 
 pager(:newpage)
