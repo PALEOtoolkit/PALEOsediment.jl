@@ -1,0 +1,804 @@
+########################################################
+# FOAM test case from Zhao (2020)
+# Default config has four columns, which can be used to run an ensemble for sensitivity studies
+# (set num_columns and per-column parameters to define a different ensemble)
+##############################################################
+sediment_FOAM:
+    parameters:
+        num_columns: 4
+        CIsotope: ScalarData
+        SIsotope: ScalarData
+    domains:
+        global:
+            # scalar domain
+     
+        fluxOceanfloor:
+            reactions:
+                floorstubparticulateflux:
+                    class: ReactionFluxTarget
+                    parameters:
+                        const_stub: true
+                        target_prefix: particulateflux_
+                        fluxlist: [
+                            "Corg", "MnHR", "MnMR", "FeHR", "FeMR", "FePR", "FeMag", "FeSm", "S0", "FeS2pyr", "FeIItot",
+                            "MnCO3rhod", "CaCO3calc", "CaCO3arag", "Biotite", "PFeHR", "PFeMR", "CFA",
+                        ]
+                    
+                    variable_attributes:
+                        #   FOAM test case, Zhao (2020), units converted to  mol m-2 yr-1 = mmol cm-2 yr- * 10
+                        particulateflux_Corg:initial_value: 3.0 # mol/column/yr-1 (0.3 mmol cm-2 yr-1 * 1e4)
+                        # particulateflux_Corg:initial_delta: -25.0
+                        particulateflux_MnHR%initial_value: 0.0327
+                        particulateflux_MnMR%initial_value: 0.0
+                        particulateflux_FeHR%initial_value: 0.0685 # mol/column/yr-1
+                        particulateflux_FeMR%initial_value: 0.0
+                        particulateflux_FePR%initial_value: 0.0
+                        particulateflux_FeMag:initial_value: 0.0199 # mol Fe3O4/column/yr-1
+                        particulateflux_FeSm:initial_value: 0.0
+                        particulateflux_S0:initial_value: 0.0
+                        particulateflux_FeS2pyr:initial_value: 0.0
+                        particulateflux_FeIItot:initial_value: 0.0 # adsorbed FeII
+                        particulateflux_MnCO3rhod:initial_value: 0.0
+                        particulateflux_CaCO3calc:initial_value: 4.32 # mol/column/yr-1 (0.432 mmol cm-2 yr-1 * 1e4)
+                        particulateflux_CaCO3arag:initial_value: 0.0
+                        particulateflux_Biotite:initial_value: 0.04 # mol/column/yr-1  Zhao 2020
+                        particulateflux_PFeHR:initial_value: 0.0
+                        particulateflux_PFeMR:initial_value: 0.0
+                        particulateflux_CFA:initial_value: 0.0
+
+                floorstubsoluteflux:
+                    class: ReactionFluxTarget
+                    parameters:
+                        target_prefix: soluteflux_
+                        fluxlist: ["O2", "DIC", "TAlk", "TP", "NO3", "TNH3", "SO4", "TH2S", "CH4", "H2", "FeIItot", "MnII", "Ca", "Mg", "K", "F", "Na", "Test"]
+                   
+        fluxOceanBurial:       
+            reactions:
+                
+                burialfluxes:
+                    class: ReactionFluxTarget
+                    parameters:
+                        target_prefix: flux_
+                        fluxlist: [
+                            "Corg_1", "Corg_2", "Corg_3", "Corg_4", "Corg_5", "Corg_6", "Corg_7", "Corg_8", "Corg_9", "Corg_10", "Corg_11", "Corg_12", "Corg_13", "Corg_14",
+                            "MnHR", "MnMR", "FeHR", "FeMR", "FePR", "FeMag", "FeSm", "S0", "FeS2pyr", "FeIItot",
+                            "MnCO3rhod", "CaCO3calc", "CaCO3arag", "Biotite", "PFeHR", "PFeMR", "CFA",
+                            "O2", "DIC", "TAlk", "TP", "NO3", "TNH3", "SO4", "TH2S", "CH4", "H2", "MnII", "Ca", "Mg", "K", "F", "Na", "Test", # solutes 
+                        ]
+                
+                total_Corg: # add up the multi-G fractions -> flux_Corg
+                    class: ReactionVectorSum
+                    parameters:
+                        vars_prefix: flux_                        
+                        vars_to_add: ["Corg_1", "Corg_2", "Corg_3", "Corg_4", "Corg_5", "Corg_6", "Corg_7", "Corg_8", "Corg_9", "Corg_10", "Corg_11", "Corg_12", "Corg_13", "Corg_14" ]
+                    variable_links:
+                        sum: flux_Corg
+ 
+        oceanfloor:
+
+            reactions:
+                grid:
+                    class: ReactionUnstructuredVectorGrid
+                    parameters:
+                        ncells: external%num_columns
+                
+                floorstubphys: 
+                    class: ReactionConst
+                    parameters:
+                        constnames: ["Afloor", "zfloor", "temp", "sal", "phi", "phimin", "w_accum", "zbioturb", "zbioirrig", "Dbio", "alpha"]
+                    variable_attributes:
+                        #                       FOAM Zhao (2022) test case
+                        Afloor:initial_value:   1.0 # m^2 column area
+                        zfloor:initial_value:   -10.0  # 2 bar pressure
+                        temp:initial_value:     285.15 # 12 C
+                        sal:initial_value:      28.4 # psu
+                        phi:initial_value:      0.64 # surface porosity
+                        phimin:initial_value:   0.64 # minimum porosity
+                        w_accum:initial_value:  0.2e-2 # 0.2 cm yr-1
+                        zbioturb:initial_value:  3e-2  # m, (3 cm bioturbation characteristic depth)
+                        zbioirrig:initial_value: 0.8e-2 # m (0.8 cm)
+                        Dbio:initial_value:     3.16e-4 # m^2 yr-1 (1e-7 cm^2 s-1 * 3.16e7 / 100^2
+                        alpha:initial_value:    100.0 # yr-1 
+
+                floorstubsoluteconc: 
+                    class: ReactionConst
+                    parameters:
+                        constnames: [
+                            "O2_conc",  "NO3_conc", "TNH3_conc", "DIC_conc", "TP_conc", "SO4_conc", "TH2S_conc", "CH4_conc", "H2_conc",
+                            "MnII_conc", "FeII_conc", "Ca_conc", "Mg_conc", "K_conc", "F_conc", "Na_conc",
+                            "pHfree", "volume",
+                        ]
+                    variable_attributes:
+                        #                       Zhao (2020) FOAM test case
+                        O2_conc:initial_value:          0.15    # (mol m-3) 0.15e-3 mmol cm-3 * 1e3
+                        NO3_conc:initial_value:         11.8e-3                   
+                        TNH3_conc:initial_value:         0.0     # 
+                        DIC_conc:initial_value:         2.0     # (mol m-3) 2000 uM
+                        TP_conc:initial_value:          0.001   # mol m-3 (1 uM)
+                        SO4_conc:initial_value:         22.0    #
+                        TH2S_conc:initial_value:         0.0     # mol m-3
+                        CH4_conc:initial_value:         0.0     # mol m-3                        
+                        H2_conc:initial_value:          0.0     # mol m-3
+                        MnII_conc:initial_value:        0.0
+                        FeII_conc:initial_value:        0.0
+                        Ca_conc:initial_value:          8.6     # mol m-3 (Zhao 2020)
+                        Mg_conc:initial_value:          46.0    # mol m-3 (Zhao 2020)
+                        K_conc:initial_value:           8.6     # mol m-3 guessed (only used to track TAlk conservation)
+                        F_conc%initial_value:           70.0e-3 # mol m-3 (Zhao 2020)
+                        Na_conc%initial_value:          380.56  # mol m-3 (Zhao 2020)
+                        pHfree:initial_value:           7.64    # used by ReactionCO2SYS to calculate speciation
+                        volume:initial_value:           1.0     # m^3 arbitrary, needed by ReactionCO2SYS
+
+                # Carbonate chemistry: calculates DIC, NH4, H2S, P surface speciation at specified pHfree
+                carbchem_oceanfloor:
+                    class: ReactionCO2SYS
+                    parameters:
+                        output_pHtot: false
+                        components: ["Ci", "NH3", "H2S", "P"] # cut down to test TAlk transport
+                        defaultconcs: [] # don't provide any modern defaults for TB etc
+                        solve_pH:   speciation # pHfree supplied, calculate speciation only
+                        outputs:    ["H", "OH", "CO2", "HCO3", "CO3", "H2S", "HSAlk", "NH4", "NH3Alk", "H3PO4", "H2PO4", "HPO4", "PO4"]
+                        
+                    variable_links: {
+                        volume: volume, rho_ref: sediment.oceanfloor.rho_ref, pressure: sediment.oceanfloor.pressure,
+                        # inputs: total species concentrations
+                        TCi_conc:   DIC_conc,   TNH3_conc: TNH3_conc, TH2S_conc: TH2S_conc,  TP_conc: TP_conc,
+                        # output speciation:
+                        H:      H_conc,     OH:     OH_conc,
+                        CO2:    CO2_conc,   HCO3:   HCO3_conc,  CO3:    CO3_conc,
+                        H2S:    H2S_conc,   HSAlk:  HS_conc,
+                        NH4:    NH4_conc,   NH3Alk: NH3_conc,
+                        H3PO4:  H3PO4_conc, H2PO4:  H2PO4_conc, HPO4:   HPO4_conc,  PO4:    PO4_conc,
+                    }
+                    
+                transfer_particulatefluxOceanfloor:
+                    class: ReactionFluxTransfer
+                    parameters:
+                        transfer_matrix:      Identity
+                        input_fluxes:         fluxOceanfloor.particulateflux_$fluxname$
+                        output_fluxes:        sediment.oceanfloor.$fluxname$_sms
+                    variable_links:                       
+
+        sediment:
+            reactions:
+                bioratesed:
+                    class: ReactionSedimentBioRates
+                    parameters:
+                        f_bioTurbDepth:         Exp2Cutoff
+                        f_bioIrrigDepth:        Exp1Cutoff
+                        separate_zbio:          true
+                        f_bioO2:                None
+                        # bioO2halfmax:           20e-3 # (mol m-3) (Dale 2015 'a', 20 uM)
+                        # bioO2decreaserate:      12e-3 # (mol m-3) (Dale 2015 'b', 12 uM)
+
+                transportsed:
+                    class: ReactionSedimentTransport
+                    parameters:
+                        L:                              3.0  # (m) column length
+                        grid_eta:                       1.5 # (m) length scale for grid transformation
+                        ncellspercol:                   300
+                        # ncellspercol:                   100
+
+                        # short column for testing
+                        # L:                              0.3  # (m) column length
+                        # grid_eta:                       0.15 # (m) length scale for grid transformation
+                        # ncellspercol:                   100
+
+                        f_grid:                         quadratic                        
+                        zdbl:                           0.04e-2  # diffusive boundary layer at sediment-water interface
+                        f_porosity:                     Const # 
+                        # zpor:                           0.1 # (m) lengthscale for porosity decrease
+                        w_solute:                       true  # include solute advection (w_solute = w_solid at base of column)
+                        # w_solute:                       false
+                       
+                ################################################################################
+                # Solute reservoirs
+                #################################################################################
+
+                reservoir_O2: {class: ReactionReservoirTotal, variable_links: {R*: O2*, volume: volume_solute}, 
+                    variable_attributes: {R_conc%diffusivity_speciesname: O2, R_conc%vphase: VP_Solute, R%initial_value: 1e-12, R%norm_value: 200e-3 }}
+
+                reservoir_NO3: {class: ReactionReservoirTotal, variable_links: {R*: NO3*, volume: volume_solute}, 
+                    variable_attributes: {R_conc%diffusivity_speciesname: NO3, R_conc%vphase: VP_Solute, R%initial_value: 1e-12, R%norm_value: 10e-3 }}
+
+                reservoir_TNH3: {class: ReactionReservoirTotal, variable_links: {R*: TNH3*, volume: volume_solute}, 
+                    variable_attributes: {R_conc%advect: false, R_conc%vphase: VP_Undefined, R%initial_value: 1e-12, R%norm_value: 1e-3 }}
+
+                reservoir_SO4: {class: ReactionReservoirTotal, variable_links: {R*: SO4*, volume: volume_solute}, 
+                    variable_attributes: {R_conc%diffusivity_speciesname: SO4, R_conc%vphase: VP_Solute, R%initial_value: 22.0, R%norm_value: 10.0 }}
+
+                reservoir_TH2S: {class: ReactionReservoirTotal, variable_links: {R*: TH2S*, volume: volume_solute}, 
+                    variable_attributes: {R_conc%advect: false, R_conc%vphase: VP_Undefined, R%initial_value: 1e-12, R%norm_value: 1e0 }}
+
+                reservoir_CH4: {class: ReactionReservoirTotal, variable_links: {R*: CH4*, volume: volume_solute}, 
+                    variable_attributes: {R_conc%diffusivity_speciesname: CH4, R_conc%vphase: VP_Solute, R%initial_value: 1e-12, R%norm_value: 1e0 }}
+
+                reservoir_H2: {class: ReactionReservoirTotal, variable_links: {R*: H2*, volume: volume_solute}, 
+                    variable_attributes: {R_conc%diffusivity_speciesname: H2, R_conc%vphase: VP_Solute, R%initial_value: 1e-12, R%norm_value: 1e-3 }}
+
+                reservoir_TP: {class: ReactionReservoirTotal, variable_links: {R*: TP*, volume: volume_solute}, 
+                    variable_attributes: {R_conc%advect: false, R_conc%vphase: VP_Undefined, R%initial_value: 1e-12, R%norm_value: 1e-3 }}
+
+                reservoir_DIC: {class: ReactionReservoirTotal, variable_links: {R*: DIC*, volume: volume_solute}, parameters: {field_data: external%CIsotope},
+                    variable_attributes: {R_conc%advect: false, R_conc%vphase: VP_Undefined, R%initial_value: 2000e-3, R%norm_value: 1e0 }}
+
+                reservoir_TAlk: {class: ReactionReservoirTotal, variable_links: {R*: TAlk*, volume: volume_solute},
+                    variable_attributes: {R_conc%advect: false, R_conc%vphase: VP_Undefined, R%initial_value: 2200e-3, R%norm_value: 1e0 }}
+
+                reservoir_Test: {class: ReactionReservoirTotal, variable_links: {R*: Test*, volume: volume_solute},
+                    variable_attributes: {R_conc%advect: false, R_conc%vphase: VP_Undefined, R%initial_value: 1e-3, R%norm_value: 1e0 }}
+                
+                # NB: gamma = 0.2 reduced bioirrigation
+                reservoir_MnII: {class: ReactionReservoirTotal, variable_links: {R*: MnII*, volume: volume_solute}, 
+                    variable_attributes: {R_conc%diffusivity_speciesname: Mn, R_conc%gamma: 0.2, R_conc%vphase: VP_Solute, R%initial_value: 1e-12, R%norm_value: 1e-3 }}
+                
+                # initialize to surface value so initial pH is reasonable
+                reservoir_Ca: {class: ReactionReservoirTotal, variable_links: {R*: Ca*, volume: volume_solute}, 
+                    variable_attributes: {R_conc%diffusivity_speciesname: Ca, R_conc%vphase: VP_Solute, R%initial_value: 8.6, R%norm_value: 1e1 }}
+
+                # initialize to surface value so initial pH is reasonable
+                reservoir_Mg: {class: ReactionReservoirTotal, variable_links: {R*: Mg*, volume: volume_solute}, 
+                    variable_attributes: {R_conc%diffusivity_speciesname: Mg, R_conc%vphase: VP_Solute, R%initial_value: 46.0, R%norm_value: 1e1 }}
+
+                # initialize to surface value so initial pH is reasonable
+                reservoir_K: {class: ReactionReservoirTotal, variable_links: {R*: K*, volume: volume_solute}, 
+                    variable_attributes: {R_conc%diffusivity_speciesname: K, R_conc%vphase: VP_Solute, R%initial_value: 8.6, R%norm_value: 1e1 }}
+
+                reservoir_F: {class: ReactionReservoirTotal, variable_links: {R*: F*, volume: volume_solute}, 
+                    variable_attributes: {R_conc%diffusivity_speciesname: F, R_conc%vphase: VP_Solute, R%initial_value: 70.0e-3, R%norm_value: 1e1 }}
+
+                reservoir_Na: {class: ReactionReservoirTotal, variable_links: {R*: Na*, volume: volume_solute}, 
+                    variable_attributes: {R_conc%diffusivity_speciesname: F, R_conc%vphase: VP_Solute, R%initial_value: 380.56, R%norm_value: 1e1 }}
+
+
+                # constant concentration only, modern value
+                reservoir_B: {class: ReactionReservoirConst, variable_links: {R*: B*},
+                    variable_attributes: {R_conc%initial_value: 0.427}}
+
+                ###########################################################################
+                # Solid phase reservoirs
+                #########################################################################
+
+                reservoir_Corg:
+                    class: ReactionRCmultiG
+                    parameters:
+                        #                   1     2    3      4    5      6     7     8     9     10    11   12   13   14
+                        k_bin_edges:        [1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e0] # , 1e1, 1e2] #  yr-1
+                        k_dist_modifier: [1.0,   1.0, 1.0,   1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0, 1.0] #,  1.0, 1.0]
+                        a: 0.15 # yr-1  reactive-continuum model average lifetime
+                        v: 0.12 # reactive-continuum model shape parameter
+                        field_data: external%CIsotope
+                        oxidant_dependent_rate: true  # scale overall rates by factor from variable freminOrgTot
+                        # oxidant_dependent_rate: false
+
+                    variable_links:
+                        volume:                         volume_solid
+                        # POC_decay:                      DIC_sms  # dump all Corg -> DIC for test case
+
+                    variable_attributes:
+                        Corg_*_conc:vphase:             VP_Solid
+                        Corg_*:initial_value:           1e-12
+
+                # MnO2
+                reservoir_MnHR: {class: ReactionReservoirTotal, variable_links: {R*: MnHR*, volume: volume_solid},
+                    variable_attributes: {R_conc%vphase: VP_Solid, R%initial_value: 1e-12, R%norm_value: 1.0}}
+
+                reservoir_MnMR: {class: ReactionReservoirTotal, variable_links: {R*: MnMR*, volume: volume_solid},
+                    variable_attributes: {R_conc%vphase: VP_Solid, R%initial_value: 1e-12, R%norm_value: 1.0}}
+
+                # MnCO3
+                reservoir_MnCO3rhod: {class: ReactionReservoirTotal, variable_links: {R*: MnCO3rhod*, volume: volume_solid},
+                    variable_attributes: {R_conc%vphase: VP_Solid, R%initial_value: 1e-12, R%norm_value: 1.0}}     
+                       
+                # ~ Fe(OH)3 (an FeIII oxide)
+                reservoir_FeHR: {class: ReactionReservoirTotal, variable_links: {R*: FeHR*, volume: volume_solid},
+                    variable_attributes: {R_conc%vphase: VP_Solid, R%initial_value: 1e-12, R%norm_value: 1.0}}
+
+                reservoir_FeMR: {class: ReactionReservoirTotal, variable_links: {R*: FeMR*, volume: volume_solid},
+                    variable_attributes: {R_conc%vphase: VP_Solid, R%initial_value: 1e-12, R%norm_value: 1.0}}
+
+                reservoir_FePR: {class: ReactionReservoirTotal, variable_links: {R*: FePR*, volume: volume_solid},
+                    variable_attributes: {R_conc%vphase: VP_Solid, R%initial_value: 1e-12, R%norm_value: 1.0}}
+
+                # Magnetite Fe3O4
+                reservoir_FeMag: {class: ReactionReservoirTotal, variable_links: {R*: FeMag*, volume: volume_solid},
+                    variable_attributes: {R_conc%vphase: VP_Solid, R%initial_value: 1e-12, R%norm_value: 1.0}}
+            
+                reservoir_FeSm: {class: ReactionReservoirTotal, variable_links: {R*: FeSm*, volume: volume_solid},
+                    variable_attributes: {R_conc%vphase: VP_Solid, R%initial_value: 1e-12, R%norm_value: 1.0}}
+
+                reservoir_S0: {class: ReactionReservoirTotal, variable_links: {R*: S0*, volume: volume_solid},
+                    variable_attributes: {R_conc%vphase: VP_Solid, R%initial_value: 1e-12, R%norm_value: 1.0}}
+              
+                reservoir_CaCO3calc: {class: ReactionReservoirTotal, variable_links: {R*: CaCO3calc*, volume: volume_solid},
+                    variable_attributes: {R_conc%vphase: VP_Solid, R%initial_value: 1e-12, R%norm_value: 1.0}}
+
+                reservoir_CaCO3arag: {class: ReactionReservoirTotal, variable_links: {R*: CaCO3arag*, volume: volume_solid},
+                    variable_attributes: {R_conc%vphase: VP_Solid, R%initial_value: 1e-12, R%norm_value: 1.0}}            
+
+                reservoir_Biotite: {class: ReactionReservoirTotal, variable_links: {R*: Biotite*, volume: volume_solid},
+                    variable_attributes: {R_conc%vphase: VP_Solid, R%initial_value: 1e-12, R%norm_value: 1.0}}            
+     
+                reservoir_FeS2pyr: {class: ReactionReservoirTotal, variable_links: {R*: FeS2pyr*, volume: volume_solid},
+                    variable_attributes: {R_conc%vphase: VP_Solid, R%initial_value: 1e-12, R%norm_value: 1.0}}
+
+                # FeHR-bound phosphorus
+                reservoir_PFeHR: {class: ReactionReservoirTotal, variable_links: {R*: PFeHR*, volume: volume_solid},
+                    variable_attributes: {R_conc%vphase: VP_Solid, R%initial_value: 1e-12, R%norm_value: 1.0}}
+
+                # FeMR-bound phosphorus
+                reservoir_PFeMR: {class: ReactionReservoirTotal, variable_links: {R*: PFeMR*, volume: volume_solid},
+                    variable_attributes: {R_conc%vphase: VP_Solid, R%initial_value: 1e-12, R%norm_value: 1.0}}      
+
+                reservoir_CFA: {class: ReactionReservoirTotal, variable_links: {R*: CFA*, volume: volume_solid},
+                    variable_attributes: {R_conc%vphase: VP_Solid, R%initial_value: 1e-12, R%norm_value: 1.0}}      
+                   
+                ############################################################################################################
+                # solute + solid phase reservoirs (using a 'fast' ie eqb chemistry reaction to partition adsorbed vs solute)
+                #############################################################################################################
+
+                # total solute and adsorbed FeII
+                # NB: no transport (advect = false), volume->volume ie cell total volume for _conc
+                reservoir_FeIItot: 
+                    class: ReactionReservoirTotal            
+                    variable_links:
+                        R*:                             FeIItot*
+                        volume:                         volume  # variable includes solute and adsorbed solid phase FeII
+                    variable_attributes:
+                        R_conc%vphase:                  VP_Undefined
+                        R_conc%advect:                  false # no transport applied directly to this variable, transport solute and solid species
+                        R%initial_value:                1e-12  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
+                        R%norm_value:                   2e-3                
+
+                ###################################################################################
+                # POC remineralization 
+                ################################################################################
+                   
+                pocdecaycomponents:
+                    class: ReactionFluxToComponents
+                    parameters: 
+                        outputflux_prefix: remin_                   
+                        outputflux_names: ["Corg", "N", "P"]
+                        #                  106/106 10/106  1/106
+                        outputflux_stoich: [1.0, 0.0943, 0.009434]   # must match input Corg stoich
+                        # outputflux_stoich: [1.0, 0.0, 0.009434]   # remove N to test TAlk balance
+                    variable_links:
+                        inputflux:  POC_decay
+
+                reminsed:
+                    class: ReactionReminO2_NO3_Mn_Fe_SO4_CH4
+
+                    parameters:
+                        oxreminlimit:       20e-3 # (mol m-3) Zhao (2020)
+                        NO3reminlimit:      4e-3 # (mol m-3) Zhao (2020)
+                        MnIVOxreminlimit:   80.0 # (mol m-3) = 32e-6*2.5e6 (32 umol MnO2 g-1 assuming dry density is 2.5 g/cm^3 (= 2.5e6 g m^-3), Zhao (2020))
+                        FeIIIOxreminlimit:  162.5 # (mol m-3) = 65e-6*2.5e6 (65 umol Fe(OH)3 g-1 assuming dry density is 2.5 g/cm^3 (= 2.5e6 g m^-3), Zhao (2020))
+                        SO4reminlimit:      1600.0e-3 # (mol m-3) Zhao (2020)
+                        aSO4:               0.2       
+                        oxidant_dependent_rate: true
+                        # oxidant_dependent_rate: false
+
+                    variable_links:
+                        FeIIIOx_conc:      FeHR_conc
+                        MnIVOx_conc:       MnHR_conc
+                        soluteflux_*:   "*_sms"
+                        soluteflux_H2S: TH2S_sms
+                        soluteflux_FeII:   FeIItot_sms
+                        soluteflux_FeIIIOx: FeHR_sms
+                        soluteflux_MnIVOx: MnHR_sms
+                        soluteflux_TNH3:   TNH3_sms
+                        soluteflux_P:      TP_sms
+
+
+                #########################################################
+                # Equilibrium chemistry
+                #########################################################
+
+                # FeII_conc primary species (solute Fe++) and corresponding algebraic constraint on FeIItot
+                # NB: FeIItot uses 'volume -> volume' (ie cell total volume), FeII_conc uses 'primary_volume -> volume_solute'
+                # NB: set advect=true on FeII_conc to transport, totalnames=["FeIItot"] to add transport flux to FeIItot
+                # NB: gamma = 0 (no biorrigiation)
+                FeII_primary_species: {class: ReactionConstraintReservoir, parameters: {primary_total_stoich: 1.0},
+                    variable_links: {R*: FeIItot*, volume: volume, Primary_conc: FeII_conc, primary_volume: volume_solute},
+                    variable_attributes: {R_constraint_conc%initial_value: 1e-12, R_constraint_conc%norm_value: 1e-3, Primary_conc%norm_value: 1e-3, Primary_conc%initial_value: 1e-12,
+                        Primary_conc%diffusivity_speciesname: Fe, Primary_conc%gamma: 0.0, Primary_conc%totalnames: ["FeIItot"], Primary_conc%vphase: VP_Solute, Primary_conc%advect: true}}           
+                
+                # Define FeIIadsorb_conc adsorbed FeII species concentration, defined to be in equilibrium with FeII_conc
+                # NB: set attributes on FeIIadsorb_conc to transport and accumulate fluxes into FeIItot_sms
+                FeIIadsorb:
+                    class: ReactionAqEqb
+                    parameters: 
+                        # K_eqb: 500.0 # Zhao (2020) value - much too high, units error ?
+                        K_eqb:   15.625 # empirically gives about right pH excursion
+                        # switch off FeII adsorbtion
+                        # K_eqb: 0.0
+                        K_power: 1.0 # K_eqb in numerator on RHS
+                        Reactants: ["FeIIadsorb_conc"]
+                        Products: ["FeII_conc"]
+                        N_components: ["FeIItot_calc", "TAlk_calc"] # S=Fe+ also add to TAlk_calc when using TAlk reservoir
+                        # N_components: ["FeIItot_calc", "2*TAlk_calc"] # S=Fe (neutral) also add to TAlk_calc when using TAlk reservoir
+                    variable_links: {volume: volume_solid} # we calculate solid phase concentration of FeIIadsorb
+                    variable_attributes: {FeIIadsorb_conc%vphase: VP_Solid, FeIIadsorb_conc%advect: true, FeIIadsorb_conc%totalnames: ["FeIItot", "TAlk"]} # S=Fe+ add transport to TAlk
+                    # variable_attributes: {FeIIadsorb_conc%vphase: VP_Solid, FeIIadsorb_conc%advect: true, FeIIadsorb_conc%totalnames: ["FeIItot", "2*TAlk"]} # S=Fe (neutral) add transport to TAlk
+        
+
+                # [H+] primary species (as pHfree) for TAlk total
+                # Contributions to alkalinity should be added to TAlk_calc
+                H_primary_species: {class: ReactionConstraintReservoir, 
+                    parameters: {
+                        primary_total_stoich: 0.0, # NB: ReactionCO2SYS adds H to TAlk_calc so don't add here
+                        primary_variable: p_concentration, # provide pHfree as state variable to solver
+                        constraint_variable: amount, # provide TAlk_constraint (mol) as algebraic constraint to solver
+                    },
+                    variable_links: {R*: TAlk*, volume: volume_solute, Primary_pconc: pHfree, Primary_conc: H_conc, primary_volume: volume_solute},
+                    variable_attributes: { Primary_pconc%initial_value: 8.0, Primary_pconc%norm_value: 1e0, R_constraint%initial_value: 1e0, R_constraint%norm_value: 1e0, 
+                        Primary_conc%diffusivity_speciesname: H, Primary_conc%totalnames: ["-1*TAlk"], Primary_conc%vphase: VP_Solute,  Primary_conc%advect: true,         
+                    }}
+
+                # Carbonate chemistry: calculates DIC, NH4, H2S, P speciation and adds contributions to TAlk_calc, 
+                carbchem:
+                    class: ReactionCO2SYS
+                    parameters:
+                        # components: ["Ci", "B", "S", "F", "Omega", "NH3", "P", "H2S"]
+                        output_pHtot: false
+                        components: ["Ci", "Omega", "NH3", "H2S", "P"] # cut down to test TAlk transport
+                        defaultconcs: [] # ["TF", "TB", "Ca"]
+                        solve_pH:   speciationTAlk # accumulate TAlk contributions into TAlk_calc
+                        # H_conc primary species is defined by ReactionConstraintReservoir, but is still added to TAlk by ReactionCO2SYS
+                        outputs:    ["OH", "CO2", "HCO3", "CO3", "H2S", "HSAlk", "NH4", "NH3Alk", "H3PO4", "H2PO4", "HPO4", "PO4", "OmegaCA", "OmegaAR"]
+                        
+                    variable_links: {
+                        volume: volume_solute, TAlk_calc: TAlk_calc,  # (re)link TAlk_calc as default is carbchem/TAlk_calc ie 'private' to this reaction
+                        # inputs: total species concentrations as mol m-3
+                        TCi_conc: DIC_conc, TNH3_conc: TNH3_conc, TH2S_conc: TH2S_conc,  TP_conc: TP_conc,
+                        # output speciation (mol m-3):
+                        OH:     OH_conc,
+                        CO2:    CO2_conc,   HCO3:   HCO3_conc,  CO3:    CO3_conc,
+                        H2S:    H2S_conc,   HSAlk:  HS_conc,
+                        NH4:    NH4_conc,   NH3Alk: NH3_conc,
+                        H3PO4:  H3PO4_conc, H2PO4:  H2PO4_conc, HPO4:   HPO4_conc,  PO4:    PO4_conc,
+                        # additional Ca_conc input to calculate carbonate saturation Omegas
+                        Ca_conc: Ca_conc,   OmegaCA: OmegaCA,   OmegaAR: OmegaAR,
+                    }
+                    variable_attributes: {
+                        # define species transport: accumulate into corresponding total variables, and accumulate contributions to TAlk
+                        # NB: total variables should have advect: false so transport is handled by species
+                        OH%diffusivity_speciesname:     OH,     OH%totalnames:       ["TAlk"],            OH%vphase:    VP_Solute,  OH%advect:      true,
+                        CO2%diffusivity_speciesname:    CO2,    CO2%totalnames:      ["DIC"],           CO2%vphase:     VP_Solute,  CO2%advect:     true,
+                        HCO3%diffusivity_speciesname:   HCO3,   HCO3%totalnames:     ["DIC", "TAlk"],   HCO3%vphase:    VP_Solute,  HCO3%advect:    true,                        
+                        CO3%diffusivity_speciesname:    CO3,    CO3%totalnames:      ["DIC", "2*TAlk"], CO3%vphase:     VP_Solute,  CO3%advect:     true,                        
+                        H2S%diffusivity_speciesname:    H2S,    H2S%totalnames:      ["TH2S"],          H2S%vphase:     VP_Solute,  H2S%advect:     true,
+                        HSAlk%diffusivity_speciesname:  HS,     HSAlk%totalnames:    ["TH2S", "TAlk"],  HSAlk%vphase:   VP_Solute,  HSAlk%advect:   true,
+                        NH4%diffusivity_speciesname:    NH4,    NH4%totalnames:      ["TNH3"],          NH4%vphase:     VP_Solute,  NH4%advect:     true,
+                        NH3Alk%diffusivity_speciesname: NH3,    NH3Alk%totalnames:   ["TNH3", "TAlk"],  NH3Alk%vphase:  VP_Solute,  NH3Alk%advect:  true,
+                        # TODO assume negligible - no diffusivity_speciesname defined ?
+                        # H3PO4%diffusivity_speciesname:  H3PO4,   H3PO4%totalnames:   ["TP", "-1*TAlk"], H3PO4%vphase:  VP_Solute,  H3PO4%advect:  true,
+                        H2PO4%diffusivity_speciesname:  H2PO4,   H2PO4%totalnames:   ["TP", ],          H2PO4%vphase:  VP_Solute,  H2PO4%advect:    true,
+                        HPO4%diffusivity_speciesname:   HPO4,    HPO4%totalnames:    ["TP", "TAlk"],    HPO4%vphase:   VP_Solute,  HPO4%advect:     true,
+                        PO4%diffusivity_speciesname:    PO4,     PO4%totalnames:     ["TP", "2*TAlk"],  PO4%vphase:    VP_Solute,  PO4%advect:      true,
+                    }
+
+                #######################################
+                # Secondary redox
+                ###########################################
+
+                #  NH4+ + 2 * O2 -> NO3- + H2O + H+ aerobic oxidation of ammonia K 1e4 # (mol m-3)-1 1e7*1e-3 Zhao (2020) R7
+                redox_TNH3_O2:   {class: ReactionAqKinetic, parameters: {
+                    K: 1e4,         Reactants: ["TNH3", "2*O2"],             Products: ["NO3", "-2*TAlk"]},          variable_links: {volume: volume_solute}}
+
+                # Mn++ + 1/2 O2 + H2O -> MnIVOx + 2 H+ aerobic oxidation of MnII, K = 6.94e2 # (mol m-3)-1 yr-1,  6.94e5 M-1 yr-1 Zhao (2020) R8
+                redox_MnII_O2:  {class: ReactionAqKinetic, parameters: {
+                    K: 6.94e2,      Reactants: ["MnII", "0.5*O2"],          Products: ["MnHR", "-2*TAlk"]},         variable_links: {volume: volume_solute}}
+
+                # Fe++ + 1/4 O2 + H2O -> FeIIIOx + 2 H+, aerobic oxidation of FeII, K = 1.4e5 # (mol m-3)-1 yr-1, 1.4e8 M-1 yr-1 Zhao (2020) R9
+                redox_FeII_O2:  {class: ReactionAqKinetic, parameters: {
+                    K: 1.4e5,       Reactants: ["FeIItot", "0.25*O2"],      Products: ["FeHR", "-2*TAlk"], 
+                                    Reactant_concs: ["FeII_conc", "O2_conc"]},                                      variable_links: {volume: volume_solute}}
+
+                # Fe++(adsorbed) + 1/4 O2 + H2O -> FeIIIOx + 2 H+, aerobic oxidation of FeII, K = 5e3 # (mol m-3)-1 yr-1, 5e6 M-1 yr-1 Zhao (2020) R30
+                # NB: rename rate variable to avoid name clash with redox_FeII_O2
+                redox_FeIIadsorb_O2:  {class: ReactionAqKinetic, parameters: {
+                    K: 5e3,         Reactants: ["FeIItot", "0.25*O2"],      Products: ["FeHR", "-2*TAlk"], 
+                                    Reactant_concs: ["FeIIadsorb_conc", "O2_conc"]}, variable_links: {redox_FeIItot_O2_FeHR*: redox_FeIItot_ads_O2_FeHR*, volume: volume_solid}}
+
+                # FeS + 2 O2 -> Fe++ + SO4--        K (mol m-3)-1 = 3e2 = 3e5*1e-3 Zhao (2020) R10
+                redox_FeS_O2:   {class: ReactionAqKinetic, parameters: {
+                    K: 3e2,         Reactants: ["2*O2", "FeSm"],            Products: ["FeIItot", "SO4"]},          variable_links: {volume: volume_solid}}
+
+                # FeS2pyr + 2 O2 -> Fe++ + 2* SO4--        K (mol m-3)-1 = 1.89e1 = 1.89e4*1e-3 Zhao (2020) R11
+                redox_FeS2pyr_O2: {class: ReactionAqKinetic, parameters: {
+                    K: 1.89e1,      Reactants: ["3.5*O2", "FeS2pyr"],       Products: ["FeIItot", "2*SO4", "-2*TAlk"]}, variable_links: {volume: volume_solid}}
+
+                # O2 + 0.5 H2S -> 0.5 SO4-- + H+,         K (mol m-3)-1 = 1.6e5*1e-3 Zhao (2020) R12 
+                redox_H2S_O2:   {class: ReactionAqKinetic, parameters: {
+                    K: 1.6e2,       Reactants: ["O2", "0.5*TH2S"],           Products: ["0.5*SO4", "-1*TAlk"]},      variable_links: {volume: volume_solute}}
+                
+                # O2 + 0.5 CH4 -> 0.5 DIC (CO2) + H2O,  K (mol m-3)-1 = 1e7 = 1e10*1e-3, Zhao (2020) R13
+                redox_CH4_O2:   {class: ReactionAqKinetic, parameters: {
+                    K: 1e7,         Reactants:  ["O2", "0.5*CH4"],          Products: ["0.5*DIC"],},                variable_links: {volume: volume_solute}}
+
+                # MnHR + 2 Fe++ + H2O -> Mn++ + 2 FeHR + 2 H+,  K = 3e3 (mol m-3)-1 = 3e6*1e-3 Zhao (2020) R14
+                redox_MnHR_FeII: {class: ReactionAqKinetic, parameters: {
+                    K: 3e3,         Reactants: ["MnHR", "2*FeIItot"],       Products: ["MnII", "2*FeHR", "-2*TAlk"],
+                                    Reactant_concs: ["MnHR_conc", "FeII_conc"]},                                    variable_links: {volume: volume_solid}}
+
+                # MnMR + 2 Fe++ + H2O -> Mn++ + 2 FeHR + 2 H+,  K = 3e1 (mol m-3)-1, guessed 1e-2 * rate for MnHR (no value in Zhao 2020)
+                redox_MnMR_FeII: {class: ReactionAqKinetic, parameters: {
+                    K: 3e3,         Reactants: ["MnMR", "2*FeIItot"],       Products: ["MnII", "2*FeHR", "-2*TAlk"],
+                                    Reactant_concs: ["MnMR_conc", "FeII_conc"]},                                    variable_links: {volume: volume_solid}}
+
+                # H2S + MnHR + 2 H+ -> Mn++ + S0 + 2 H2O,  K = 2e1 (mol m-3)-1 = 2e4*1e-3 Zhao (2020) R15
+                redox_MnHR_H2S: {class: ReactionAqKinetic, parameters: {
+                    K: 2e1,         Reactants: ["MnHR", "TH2S"],             Products: ["MnII", "S0", "2*TAlk"]},    variable_links: {volume: volume_solid}}
+ 
+                # H2S + MnHR + 2 H+ -> Mn++ + S0 + 2 H2O,  K = guessed 1e-2 * rate for MnHR (no value in Zhao 2020)
+                redox_MnHR_H2S: {class: ReactionAqKinetic, parameters: {
+                    K: 2e-1,        Reactants: ["MnMR", "TH2S"],             Products: ["MnII", "S0", "2*TAlk"]},    variable_links: {volume: volume_solid}}
+
+                # H2S + 2*FeHR + 4 H+ -> 2*Fe++ + S0 + 3 H2O  K = 8e0 (mol m-3)-1 = 8e3*1e-3 Zhao (2020) R16
+                redox_FeHR_H2S: {class: ReactionAqKinetic, parameters: {
+                    K: 8e0,         Reactants: ["2*FeHR", "TH2S"],           Products: ["2*FeIItot", "S0", "4*TAlk"]}, variable_links: {volume: volume_solid}}
+
+                # H2S + 2*FeHR + 4 H+ -> 2*Fe++ + S0 + 3 H2O   K = guess 1e-3 * rate for FeHR (no value in Zhao 2020)
+                redox_FeMR_H2S: {class: ReactionAqKinetic, parameters: {
+                    K: 8e-3,        Reactants: ["2*FeMR", "TH2S"],           Products: ["2*FeIItot", "S0", "4*TAlk"]}, variable_links: {volume: volume_solid}}
+
+                # SO4-- + CH4 + 2 H+ -> DIC + H2S + 2H2O, K (mol m-3)-1 = 1e4*1e-3 Zhao (2020) R18
+                redox_CH4_SO4:  {class: ReactionAqKinetic, parameters: {
+                    K: 1e1,         Reactants:  ["SO4", "CH4"],             Products: ["DIC", "TH2S", "2*TAlk"]},    variable_links: {volume: volume_solute}}
+
+                # 4 S0 + 4 H2O -> 3H2S + SO4-- + 2 H+,  K = 3.16 yr-1, Zhao (2020) R19
+                redox_S0:       {class: ReactionAqKinetic, parameters: {
+                    K: 3.16,        Reactants:  ["4*S0",],                  Products: ["3*TH2S", "SO4", "-2*TAlk"]}, variable_links: {volume: volume_solid}}
+                
+                # H2 + 0.5 O2 -> H2O, K = 1e6 # (mol m-3)-1 yr-1 = 1e9 M-1 yr-1 *1e-3 NB: arbitrary rate, just need to scavenge H2 produced during pyrite formation)
+                redox_H2_O2:    {class: ReactionAqKinetic, parameters: {
+                    K: 1e6,         Reactants:  ["H2", "0.5*O2"],           Products: []},                          variable_links: {volume: volume_solute}}
+                
+                # H2 + 0.25 SO4 + 0.5 H+ -> 0.25 H2S + H2O, K = 1e6 # (mol m-3)-1 yr-1 = 1e9 M-1 yr-1 *1e-3 NB: arbitrary rate, just need to scavenge H2 produced during pyrite formation)
+                redox_H2_SO4:   {class: ReactionAqKinetic, parameters: {
+                    K: 1e6,         Reactants:  ["H2", "0.25*SO4"],         Products: ["0.25*TH2S", "0.5*TAlk"]},    variable_links: {volume: volume_solute}}
+
+                # Magnetite reduction Zhao (2020) R29, K = 5.4e-3 mM^-0.5 yr^-1 (which should be also (mol m-3)^-0.5 yr-1)
+                # typo in paper ? K = 0.171 ie * sqrt(1000) seems to work
+                # Fe3O4 + 0.25 H2S + 5.5 H+ -> 3 Fe++ + 0.25 SO4-- + 3 H2O
+                redox_FeMag_H2S: {class: ReactionAqKinetic, parameters: {
+                    K: 0.171,       Reactants: ["FeMag", "0.25*TH2S"],       Products: ["3*FeIItot", "0.25*SO4", "5.5*TAlk"], 
+                                    Reactant_concs: ["FeMag_conc", "TH2S"], Rate_functions:  ["linear", "sqrt"]},  variable_links: {volume: volume_solid}}
+
+
+                ###########################################
+                # Mineral formation / dissolution
+                ###########################################
+
+                # FeSm formation Zhao (2020) R17, K = 1.48e6 * 1e-3 (mol m-3)-1 yr-1
+                # Fe++ + HS- -> FeS + H+
+                FeSm_precip: {class: ReactionAqKinetic, parameters: {
+                    K: 1.48e3,          Reactants: ["FeIItot", "TH2S"],      Products: ["FeSm", "-2*TAlk"],
+                                        Reactant_concs: ["FeII_conc", "TH2S_conc"]},                                 variable_links: {volume: volume_solute}}
+
+                # FeHR -> FeMR, K = 0.57 yr-1 (decay_timescale = 1/K = 1.754 yr), Zhao (2020) R21
+                # show_decayrate = true needed for P coprecipitation
+                FeHRdecay: {class: ReactionParticleDecay, parameters: {
+                    decay_timescale: 1.754, show_decayrate: true}, 
+                    variable_links: {Particle*: FeHR*, decayflux: FeMR_sms, decayrate: rate_FeHR_FeMR}}
+
+                # MnHR -> MnMR, K = 1.7 yr-1 (decay_timescale = 1/K = 0.588 yr), Zhao (2020) R22
+                MnHRdecay: {class: ReactionParticleDecay, parameters: {
+                    decay_timescale: 0.588},
+                    variable_links: {Particle*: MnHR*, decayflux: MnMR_sms}}
+
+                # CaCO3arag Zhao (2020) R23 K_eqb = 5.6e-7 M^2 * 1e3^2 = 5.6e-1 (mol m-3)^2
+                Omega_arag:    {class: ReactionAqEqb,  parameters: {
+                    K_eqb: 5.6e-1,      Reactants: ["Omega_arag"],          Products: ["Ca_conc", "CO3_conc"], N_components: [] }}
+                # K_precip: 3e-6 # M yr-1 = 3e-6 * 1e3 = 3e-3 mol m-3 yr-1, K_dissol = 0.5 yr-1
+                # NB: OmegaAR is the CO2SYS value
+                CaCO3arag_precipdissol: {class: ReactionAqPrecipDissol, parameters: {
+                    K_precip: 3e-3, K_dissol: 0.5, dissol_rolloff_conc: 1e-9, 
+                                        Reactants: ["Ca", "DIC"],           Products: ["CaCO3arag", "-2*TAlk"]},
+                    variable_links: {Omega: Omega_arag, volume: volume_solid}}
+
+                # CaCO3calc Zhao (2020) R24 K_eqb = 3.52e-7 M^2 * 1e3^2 = 3.52e-1 (mol m-3)^2
+                Omega_calcite:    {class: ReactionAqEqb,  parameters: {
+                    K_eqb: 3.52e-1,     Reactants: ["Omega_calcite"],       Products: ["Ca_conc", "CO3_conc"], N_components: [] }}
+                # K_precip: 3e-7 # M yr-1 = 3e-7 * 1e3 = 3e-4 mol m-3 yr-1, K_dissol = 0.5 yr-1
+                # NB: OmegaCA is the CO2SYS value
+                CaCO3calc_precipdissol: {class: ReactionAqPrecipDissol, parameters: {
+                    K_precip: 3e-4, K_dissol: 0.5, dissol_rolloff_conc: 1e-9, 
+                                        Reactants: ["Ca", "DIC"],           Products: ["CaCO3calc", "-2*TAlk"]},
+                    variable_links: {Omega: Omega_calcite, volume: volume_solid}}
+
+                # MnCO3rhod  K = 1e-9 M^2 = 1e-9*1e3^2 = 1e-3 (mol m-3)^2 Zhao (2020) R25
+                Omega_MnCO3rhod:    {class: ReactionAqEqb,  parameters: {
+                    K_eqb: 1e-3,        Reactants: ["Omega_MnCO3rhod"],     Products: ["MnII_conc", "CO3_conc"], N_components: [] }}
+                # MnCO3rhod Zhao (2020) R25
+                # K_precip: 3e-6 # M yr-1 = 3e-6 * 1e3 = 3e-3 mol m-3 yr-1, K_dissol = 0.25 yr-1
+                MnCO3rhod_precipdissol: {class: ReactionAqPrecipDissol, parameters: {
+                    K_precip: 3e-3, K_dissol: 0.25, dissol_rolloff_conc: 1e-9, 
+                                        Reactants: ["MnII", "DIC"],         Products: ["MnCO3rhod", "-2*TAlk"]},
+                    variable_links: {Omega: Omega_MnCO3rhod, volume: volume_solid}}
+
+                # Pyrite  FeSm + H2S -> FeS2pyr + H2, K = 3.25  (mol m-3) yr-1 = 3.25e3*1e-3 (mol m-3) yr-1, Zhao (2020) R27
+                pyrite_H2S: {class: ReactionAqKinetic, parameters: {
+                    K: 3.25,            Reactants: ["FeSm", "TH2S"],         Products: ["FeS2pyr", "H2"]},              variable_links: {volume: volume_solid}}
+
+                # Pyrite  FeSm + S0 -> FeS2pyr, K = 7.26  (mol m-3) yr-1 = 7.26e3*1e-3 (mol m-3) yr-1, Zhao (2020) R20
+                # TODO check rate factor - two solid phases reacting -> K is not M-1 yr-1 ? so could be out by factor ~ phi 
+                pyrite_S0:  {class: ReactionAqKinetic, parameters: {
+                    K: 7.26,            Reactants: ["FeSm", "S0"],          Products: ["FeS2pyr"]},                     variable_links: {volume: volume_solid}}
+
+                # Biotite dissolution Zhao (2020) R28, K = 3e-4 yr-1
+                # KMgFe2AlSi3O10(OH)2 + 7H+ + 0.5H2O --> K+ + Mg++ + 2Fe++ + 0.5Al2Si2O5(OH)4 + 2H4SiO4
+                # we only track Biotite -> K, Mg, FeII, TAlk
+                # Biotite_dissol: {class: ReactionAqKinetic, parameters: {K: 3e-4,      Reactants: ["Biotite"],               Products: ["K", "Mg", "2*FeIItot", "7*TAlk"],
+                # omit Biotite from list of Reactants so it is not actually consumed (Zhao 2020) ie concentration in column reaches a constant set by surface input vs transport
+                Biotite_dissol: {class: ReactionAqKinetic, parameters: {
+                    K: 3e-4,            Reactants: [],                      Products: ["K", "Mg", "2*FeIItot", "7*TAlk"],
+                                        Reactant_concs: ["Biotite_conc"]},                                          variable_links: {volume: volume_solid}}
+                Biotite_dissolflux_sum_columns: {class: ReactionSumColumns_dev,
+                    variable_links: {X: redox_K_Mg_FeIItot, X_sum: budgets.Biotite_dissolflux}}
+
+                # P-Fe coprecipitation, transfer, and release
+                # gamma = 0.24, P_limit: 10e-3  mol m-3 = 10 uM (Zhao 2020)                
+                PFeHR_coprecip: {class: ReactionPACoPrecip, parameters: {
+                    gamma: 0.24,    P_limit: 10e-3,
+                    A_rate_stoich_factors: [             1.0,                                       1.0,                                           2.0,                                              2.0]},
+                    variable_links: {A_formation_rate_1: redox_FeIItot_O2_FeHR, A_formation_rate_2: redox_FeIItot_ads_O2_FeHR, A_formation_rate_3: redox_MnHR_FeIItot_MnII_FeHR, A_formation_rate_4: redox_MnMR_FeIItot_MnII_FeHR,
+                        PA_sms:    PFeHR_sms,   rate_PA_coprecip*:      rate_PFeHR_coprecip*,
+                        P_*: TP_*,}}
+
+                PFeHR_release: {class: ReactionPARelease, parameters: {
+                    A_rate_stoich_factors: [                -4.0,                                   2.0]},
+                    variable_links: {A_destruction_rate_1:  reminOrgOxFeIIIOx, A_destruction_rate_2: redox_FeHR_TH2S_FeIItot_S0,
+                        A_conc:     FeHR_conc,  PA_conc:                PFeHR_conc,             PA_theta:   PFeHR_theta,
+                        PA_sms:     PFeHR_sms,  rate_PA_release*:       rate_PFeHR_release*,
+                        P_sms:      TP_sms,}}
+                        
+                # transfer adsorbed P from FeHR to FeMR phase
+                PFeHR_PFeMR: { class: ReactionPARelease, parameters: {
+                    A_rate_stoich_factors: [               1.0]},
+                    variable_links: {A_destruction_rate_1: rate_FeHR_FeMR,
+                        A_conc:     FeHR_conc,  PA_conc:                PFeHR_conc,             PA_theta:   PFeHR_theta_unused,
+                        PA_sms:     PFeHR_sms,  rate_PA_release*:       rate_PFeHR_PFeMR*,
+                        P_sms:      PFeMR_sms,}}
+                    
+                PFeMR_release: {class: ReactionPARelease, parameters: {
+                    A_rate_stoich_factors: [                2.0]},
+                    variable_links: {A_destruction_rate_1:  redox_FeMR_TH2S_FeIItot_S0,
+                        A_conc:     FeMR_conc,  PA_conc:                PFeMR_conc,             PA_theta:   PFeMR_theta, 
+                        PA_sms:     PFeMR_sms,  rate_PA_release*:       rate_PFeMR_release*,
+                        P_sms:      TP_sms,}}
+
+                
+                # minimal CFA "Omega" that just depends on [TP] and [F]  K = 10e-6 M * 70.0e-6 M = 10e-6*70e-6*1e3^2 = 7e-4 (mol m-3)^2 (ie much simpler than Zhao (2020) R26)
+                # (so CFA saturation corresponds to 10 uM [TP] at modern [F] = 70e-6)
+                NotOmega_CFA:    {class: ReactionAqEqb,  parameters: {
+                    K_eqb: 7e-4,      Reactants: ["NotOmega_CFA"],     Products: ["TP_conc", "F_conc"], N_components: [] }}
+
+                # CFA precipitation, no dissolution, Zhao (2020) R26
+                # K_precip: 2.7e-8 # M yr-1 = 2.7e-8 * 1e3 = 2.7e-5 mol m-3 yr-1, K_dissol = 0
+                # assume reaction is P-normalized (ie * 1/4.8) of:
+                # 9.54Ca++ + 0.33Na+ + 0.13Mg++ + 4.8PO4--- + 1.2CO3-- + 2.48F- --> Ca_9.54 Na_0.33 Mg_0.13 (PO4)_4.8 (CO3)_1.2 F_2.48
+                # TAlk contribution = -(9.54*2 + 0.33 + 0.13*2 - 4.8 - 2.48) = -12.39
+                CFA_precip: {class: ReactionAqPrecipDissol, parameters: {
+                    # K_precip: 2.7e-5, K_dissol: 0.0,
+                    K_precip: 2.7e-3, K_dissol: 0.0,
+                                        Reactants: ["1.9875*Ca", "0.06875*Na", "0.02708*Mg", "TP", "0.25*DIC", "0.5167*F"],  Products: ["CFA", "-2.58121*TAlk"]}, # NB: normalized to P
+                    variable_links: {Omega: NotOmega_CFA, volume: volume_solid}}
+
+        sedimentfloor:
+            reactions:
+           
+        budgets:
+            reactions:
+                grid:
+                    class: ReactionUnstructuredVectorGrid
+                    parameters:
+                        ncells: external%num_columns
+            
+                column_totals:
+                    class: ReactionFluxTarget
+                    parameters:
+                        target_prefix: ""
+                        fluxlist: ["Biotite_dissolflux"]
+
+                ############################################################################
+                # per-column net input into sediment
+                # 
+                # solid X:
+                #   fluxOceanfloor.particulateflux_X - fluxOceanBurial.flux_X
+                # solute X:
+                #   -fluxOceanfloor.soluteflux_X - fluxOceanBurial.flux_X
+                ############################################################################
+
+                budget_C:
+                    class: ReactionVectorSum
+                    parameters:
+                        vars_to_add: [
+                            "fluxOceanfloor.particulateflux_Corg",          "-1*fluxOceanBurial.flux_Corg", 
+                            "fluxOceanfloor.particulateflux_CaCO3calc",     "-1*fluxOceanBurial.flux_CaCO3calc",
+                            "fluxOceanfloor.particulateflux_CaCO3arag",     "-1*fluxOceanBurial.flux_CaCO3arag",
+                            "fluxOceanfloor.particulateflux_MnCO3rhod",     "-1*fluxOceanBurial.flux_MnCO3rhod",
+                            "0.25*fluxOceanfloor.particulateflux_CFA",      "-0.25*fluxOceanBurial.flux_CFA",
+                            "-1*fluxOceanfloor.soluteflux_DIC",             "-1*fluxOceanBurial.flux_DIC",    
+                            "-1*fluxOceanfloor.soluteflux_CH4",             "-1*fluxOceanBurial.flux_CH4",
+                        ]
+                    variable_links:
+                        sum: net_input_C
+
+                budget_P:
+                    class: ReactionVectorSum
+                    parameters:
+                        vars_to_add: [
+                            # stoich factor Porg/Corg = 1/106 = 9.434e-3
+                            "9.434e-3*fluxOceanfloor.particulateflux_Corg", "-9.434e-3*fluxOceanBurial.flux_Corg",
+                            "fluxOceanfloor.particulateflux_PFeHR",         "-1*fluxOceanBurial.flux_PFeHR",
+                            "fluxOceanfloor.particulateflux_PFeMR",         "-1*fluxOceanBurial.flux_PFeMR",
+                            "fluxOceanfloor.particulateflux_CFA",           "-1*fluxOceanBurial.flux_CFA",
+                            "-1*fluxOceanfloor.soluteflux_TP",              "-1*fluxOceanBurial.flux_TP",
+                        ]
+                    variable_links:
+                        sum: net_input_P
+
+                budget_Mn:
+                    class: ReactionVectorSum
+                    parameters:
+                        vars_to_add: [
+                            "fluxOceanfloor.particulateflux_MnHR",          "-1*fluxOceanBurial.flux_MnHR",
+                            "fluxOceanfloor.particulateflux_MnMR",          "-1*fluxOceanBurial.flux_MnMR",
+                            "fluxOceanfloor.particulateflux_MnCO3rhod",     "-1*fluxOceanBurial.flux_MnCO3rhod",
+                            "-1*fluxOceanfloor.soluteflux_MnII",            "-1*fluxOceanBurial.flux_MnII",
+                        ]
+                    variable_links:
+                        sum: net_input_Mn
+                
+                budget_Fe:
+                    class: ReactionVectorSum
+                    parameters:
+                        vars_to_add: [
+                            "fluxOceanfloor.particulateflux_FeHR",          "-1*fluxOceanBurial.flux_FeHR",
+                            "fluxOceanfloor.particulateflux_FeMR",          "-1*fluxOceanBurial.flux_FeMR",
+                            "fluxOceanfloor.particulateflux_FePR",          "-1*fluxOceanBurial.flux_FePR",
+                            "3*fluxOceanfloor.particulateflux_FeMag",       "-3*fluxOceanBurial.flux_FeMag",
+                            "fluxOceanfloor.particulateflux_FeSm",          "-1*fluxOceanBurial.flux_FeSm",
+                            "fluxOceanfloor.particulateflux_FeS2pyr",       "-1*fluxOceanBurial.flux_FeS2pyr",
+                            "2*Biotite_dissolflux",
+                            "fluxOceanfloor.particulateflux_FeIItot",       "-1*fluxOceanBurial.flux_FeIItot",
+                            "-1*fluxOceanfloor.soluteflux_FeIItot",
+                        ]
+                    variable_links:
+                        sum: net_input_Fe
+
+                budget_S:
+                    class: ReactionVectorSum
+                    parameters:
+                        vars_to_add: [
+                            "fluxOceanfloor.particulateflux_FeSm",          "-1*fluxOceanBurial.flux_FeSm",
+                            "2*fluxOceanfloor.particulateflux_FeS2pyr",     "-2*fluxOceanBurial.flux_FeS2pyr",
+                            "fluxOceanfloor.particulateflux_S0",            "-1*fluxOceanBurial.flux_S0",
+                            "-1*fluxOceanfloor.soluteflux_TH2S",            "-1*fluxOceanBurial.flux_TH2S",
+                            "-1*fluxOceanfloor.soluteflux_SO4",            "-1*fluxOceanBurial.flux_SO4",
+                        ]
+                    variable_links:
+                        sum: net_input_S
+
+                budget_TAlk:
+                    class: ReactionVectorSum
+                    parameters:
+                        vars_to_add: [
+                            "-1*fluxOceanfloor.soluteflux_TAlk",            "-1*fluxOceanBurial.flux_TAlk",
+                            "-2*fluxOceanfloor.soluteflux_SO4",             "-2*fluxOceanBurial.flux_SO4",
+                            "-1*fluxOceanfloor.soluteflux_NO3",             "-1*fluxOceanBurial.flux_NO3",
+                            "1*fluxOceanfloor.soluteflux_TNH3",             "1*fluxOceanBurial.flux_TNH3",
+                            "-1*fluxOceanfloor.soluteflux_TP",              "-1*fluxOceanBurial.flux_TP",
+                            "2*fluxOceanfloor.soluteflux_MnII",             "2*fluxOceanBurial.flux_MnII",
+                            "2*fluxOceanfloor.soluteflux_Ca",               "2*fluxOceanBurial.flux_Ca",
+                            "2*fluxOceanfloor.soluteflux_Mg",               "2*fluxOceanBurial.flux_Mg",
+                            "1*fluxOceanfloor.soluteflux_K",                "1*fluxOceanBurial.flux_K",
+                            "1*fluxOceanfloor.soluteflux_Na",               "1*fluxOceanBurial.flux_Na",
+                            "-1*fluxOceanfloor.soluteflux_F",               "-1*fluxOceanBurial.flux_F",
+                            "2*fluxOceanfloor.soluteflux_FeIItot",
+                            "-2*fluxOceanfloor.particulateflux_FeIItot",    "2*fluxOceanBurial.flux_FeIItot", # adsorbed FeII
+                        ]
+                    variable_links:
+                        sum: net_input_TAlk
