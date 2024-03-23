@@ -1,9 +1,10 @@
 ########################################################
 # Dale (2015) shelf/slope test cases with Corg, O2, NO2, NO3, Mn, Fe, SO4/H2S, P, with FeS system and pyrite
+# FeP coprecipitation and CFA formation from Dale (2016)
 # Default config has four columns: 2*shelf, 2*slope
 # Set num_columns and per-column parameters to define a different ensemble.
 ##############################################################
-sediment_Corg_O2NNMnFeS:
+sediment_Corg_O2NNMnFeSP:
     parameters:
         num_columns: 4
         CIsotope: ScalarData
@@ -19,7 +20,7 @@ sediment_Corg_O2NNMnFeS:
                     parameters:
                         const_stub: true
                         target_prefix: particulateflux_
-                        fluxlist: ["Corg", "MnHR", "MnMR", "FeHR", "FeMR", "FePR", "S0", "FeSm", "FeS2pyr",]
+                        fluxlist: ["Corg", "MnHR", "MnMR", "FeHR", "FeMR", "FePR", "S0", "FeSm", "FeS2pyr", "PFeHR", "PFeMR", "CFA",]
                     
                     variable_attributes:
                         #                                       Dale (2015) test cases
@@ -38,12 +39,15 @@ sediment_Corg_O2NNMnFeS:
                         particulateflux_S0:initial_value:       0.0
                         particulateflux_FeSm:initial_value:     0.0
                         particulateflux_FeS2pyr:initial_value:  0.0
+                        particulateflux_PFeHR:initial_value:    0.0
+                        particulateflux_PFeMR:initial_value:    0.0
+                        particulateflux_CFA:initial_value:      0.0
 
                 floorstubsoluteflux:
                     class: ReactionFluxTarget
                     parameters:
                         target_prefix: soluteflux_
-                        fluxlist: ["O2", "DIC", "TP", "SO4", "TH2S", "CH4", "H2", "FeII", "MnII", "NO2", "NO3", "TNH3"]
+                        fluxlist: ["O2", "DIC", "TP", "SO4", "TH2S", "CH4", "H2", "FeII", "MnII", "NO2", "NO3", "TNH3", "Ca", "F"]
                    
 
         fluxOceanBurial:       
@@ -55,8 +59,8 @@ sediment_Corg_O2NNMnFeS:
                         target_prefix: flux_
                         fluxlist: [
                             "Corg_1", "Corg_2", "Corg_3", "Corg_4", "Corg_5", "Corg_6", "Corg_7", "Corg_8", "Corg_9", "Corg_10", "Corg_11", "Corg_12", "Corg_13", "Corg_14",
-                            "MnHR", "MnMR", "FeHR", "FeMR", "FePR", "S0", "FeSm", "FeS2pyr",
-                            "O2", "DIC", "TP", "SO4", "TH2S", "CH4", "H2", "FeII", "MnII", "NO2", "NO3", "TNH3",
+                            "MnHR", "MnMR", "FeHR", "FeMR", "FePR", "S0", "FeSm", "FeS2pyr", "PFeHR", "PFeMR", "CFA",
+                            "O2", "DIC", "TP", "SO4", "TH2S", "CH4", "H2", "FeII", "MnII", "NO2", "NO3", "TNH3", "Ca", "F",
                         ]
                 
                 total_Corg: # add up the multi-G fractions -> flux_Corg
@@ -99,7 +103,7 @@ sediment_Corg_O2NNMnFeS:
                     parameters:
                         constnames: [
                             "O2_conc", "DIC_conc", "TP_conc", "SO4_conc", "TH2S_conc", "CH4_conc", "H2_conc",
-                            "FeII_conc", "MnII_conc", "NO2_conc", "NO3_conc", "TNH3_conc",
+                            "FeII_conc", "MnII_conc", "NO2_conc", "NO3_conc", "TNH3_conc", "Ca_conc", "F_conc",
                         ]
                     variable_attributes:
                         #                       Dale (2015) test cases
@@ -116,6 +120,8 @@ sediment_Corg_O2NNMnFeS:
                         FeII_conc:initial_value:    0.0  # mol m-3
                         MnII_conc:initial_value:    0.0
                         TP_conc:initial_value:      2e-3  # (mol m-3) 2 uM
+                        Ca_conc:initial_value:      8.6     # mol m-3 (modern value, only used to track TAlk conservation)
+                        F_conc%initial_value:       100.0e-3 # mol m-3 (Dale 2016
                         
 
                 transfer_particulatefluxOceanfloor:
@@ -191,6 +197,12 @@ sediment_Corg_O2NNMnFeS:
                 reservoir_FeII: {class: ReactionReservoirTotal, variable_links: {R*: FeII*, volume: volume_solute}, 
                     variable_attributes: {R_conc%diffusivity_speciesname: Fe, R_conc%gamma: 0.2, R_conc%vphase: VP_Solute, R%initial_value: 1e-12, R%norm_value: 1.0 }}
 
+                reservoir_Ca: {class: ReactionReservoirTotal, variable_links: {R*: Ca*, volume: volume_solute}, 
+                    variable_attributes: {R_conc%diffusivity_speciesname: Ca, R_conc%vphase: VP_Solute, R%initial_value: 1e-12, R%norm_value: 1e1 }}
+
+                reservoir_F: {class: ReactionReservoirTotal, variable_links: {R*: F*, volume: volume_solute}, 
+                    variable_attributes: {R_conc%diffusivity_speciesname: F, R_conc%vphase: VP_Solute, R%initial_value: 1e-12, R%norm_value: 1e1 }}
+
                 # No TAlk or N2 reservoir, but track  _sms fluxes to allow budget check
                 TAlk_N2_sms: {class: ReactionFluxTarget, parameters: {target_prefix: "",
                     fluxlist: ["TAlk_sms", "N2_sms"]}}
@@ -248,6 +260,17 @@ sediment_Corg_O2NNMnFeS:
 
                 reservoir_FeS2pyr: {class: ReactionReservoirTotal, variable_links: {R*: FeS2pyr*, volume: volume_solid},
                     variable_attributes: {R_conc%vphase: VP_Solid, R%initial_value: 1e-12, R%norm_value: 1.0}}
+
+                # FeHR-bound phosphorus
+                reservoir_PFeHR: {class: ReactionReservoirTotal, variable_links: {R*: PFeHR*, volume: volume_solid},
+                    variable_attributes: {R_conc%vphase: VP_Solid, R%initial_value: 1e-12, R%norm_value: 1.0}}
+
+                # FeMR-bound phosphorus
+                reservoir_PFeMR: {class: ReactionReservoirTotal, variable_links: {R*: PFeMR*, volume: volume_solid},
+                    variable_attributes: {R_conc%vphase: VP_Solid, R%initial_value: 1e-12, R%norm_value: 1.0}}      
+
+                reservoir_CFA: {class: ReactionReservoirTotal, variable_links: {R*: CFA*, volume: volume_solid},
+                    variable_attributes: {R_conc%vphase: VP_Solid, R%initial_value: 1e-12, R%norm_value: 1.0}}     
                
                 #########################################################
                 # Equilibrium chemistry
@@ -426,6 +449,49 @@ sediment_Corg_O2NNMnFeS:
                         decayflux:       FeMR_sms
                         decayrate:       rate_FeHR_FeMR
 
+                # P-Fe coprecipitation         
+                PFeHR_coprecip: {class: ReactionPACoPrecip, parameters: {
+                    gamma: 0.1,    P_limit: 10e-3, P_components: ["-1*TP", "TAlk"],
+                    A_rate_stoich_factors: [             1.0,                                   1.0,                                        2.0,                                            2.0]},
+                    variable_links: {A_formation_rate_1: redox_FeII_O2_FeHR, A_formation_rate_2: redox_FeII_NO3_FeHR_N2, A_formation_rate_3: redox_MnHR_FeII_MnII_FeHR, A_formation_rate_4: redox_MnMR_FeII_MnII_FeHR,
+                        PA_sms:    PFeHR_sms,   rate_PA_coprecip*:      rate_PFeHR_coprecip*,
+                        P_conc: TP_conc,}}
+
+                # P-FeHR release
+                PFeHR_release: {class: ReactionPARelease, parameters: {
+                    P_components: ["TP", "-1*TAlk"],
+                    A_rate_stoich_factors: [                -4.0,                                   1.0]},
+                    variable_links: {A_destruction_rate_1:  reminOrgOxFeIIIOx, A_destruction_rate_2: redox_FeHR_TH2S_FeII_S0,
+                        A_conc:     FeHR_conc,  PA_conc:                PFeHR_conc,             PA_theta:   PFeHR_theta,
+                        PA_sms:     PFeHR_sms,  rate_PA_release*:       rate_PFeHR_release*,}}
+                        
+                # P-FeHR 25% transfer to FeMR phase, 75% release
+                PFeHR_PFeMR: { class: ReactionPARelease, parameters: {
+                    P_components: ["0.25*PFeMR", "0.75*TP", "-0.75*TAlk"], # 1/4 of release P from FeHR -> FeMR, 3/4 to dissolved TP 
+                    A_rate_stoich_factors: [               1.0]},
+                    variable_links: {A_destruction_rate_1: rate_FeHR_FeMR,
+                        A_conc:     FeHR_conc,  PA_conc:                PFeHR_conc,             PA_theta:   PFeHR_theta_unused,
+                        PA_sms:     PFeHR_sms,  rate_PA_release*:       rate_PFeHR_PFeMR*,}}
+
+                # P-FeMR release
+                PFeMR_release: {class: ReactionPARelease, parameters: {
+                    P_components: ["TP", "-1*TAlk"],
+                    A_rate_stoich_factors: [                1.0]},
+                    variable_links: {A_destruction_rate_1:  redox_FeMR_TH2S_FeII_S0,
+                        A_conc:     FeMR_conc,  PA_conc:                PFeMR_conc,             PA_theta:   PFeMR_theta, 
+                        PA_sms:     PFeMR_sms,  rate_PA_release*:       rate_PFeMR_release*,}}
+
+                CFA_formation:
+                    class: ReactionCFAsimple
+
+                    parameters:
+                        R_CFA:  1.0  # yr-1 CFA formation rate constant Dale etal (2016) quote 1.0 yr-1
+                        Peq_conc: 10e-3 # mol m-3 Dale etal (2016) quote 10e-6*1e3
+                    variable_links:
+                        P_conc:     TP_conc
+                        P_sms:      TP_sms
+
+
         sedimentfloor:
             reactions:
            
@@ -456,7 +522,8 @@ sediment_Corg_O2NNMnFeS:
                     class: ReactionVectorSum
                     parameters:
                         vars_to_add: [
-                            "fluxOceanfloor.particulateflux_Corg",          "-1*fluxOceanBurial.flux_Corg", 
+                            "fluxOceanfloor.particulateflux_Corg",          "-1*fluxOceanBurial.flux_Corg",
+                            "0.0453*fluxOceanfloor.particulateflux_CFA",   "-0.0453*fluxOceanBurial.flux_CFA",
                             "-1*fluxOceanfloor.soluteflux_DIC",             "-1*fluxOceanBurial.flux_DIC",
                             "-1*fluxOceanfloor.soluteflux_CH4",             "-1*fluxOceanBurial.flux_CH4",
                         ]
@@ -483,6 +550,9 @@ sediment_Corg_O2NNMnFeS:
                         vars_to_add: [
                             # stoich factor Porg/Corg = 1/106 = 9.434e-3
                             "9.434e-3*fluxOceanfloor.particulateflux_Corg", "-9.434e-3*fluxOceanBurial.flux_Corg",
+                            "fluxOceanfloor.particulateflux_PFeHR",         "-1*fluxOceanBurial.flux_PFeHR",
+                            "fluxOceanfloor.particulateflux_PFeMR",         "-1*fluxOceanBurial.flux_PFeMR",
+                            "fluxOceanfloor.particulateflux_CFA",           "-1*fluxOceanBurial.flux_CFA",
                             "-1*fluxOceanfloor.soluteflux_TP",              "-1*fluxOceanBurial.flux_TP",
                         ]
                     variable_links:
@@ -538,6 +608,8 @@ sediment_Corg_O2NNMnFeS:
                             "-1*fluxOceanfloor.soluteflux_TP",              "-1*fluxOceanBurial.flux_TP",
                             "2*fluxOceanfloor.soluteflux_MnII",             "2*fluxOceanBurial.flux_MnII",
                             "2*fluxOceanfloor.soluteflux_FeII",             "2*fluxOceanBurial.flux_FeII",
+                            "2*fluxOceanfloor.soluteflux_Ca",               "2*fluxOceanBurial.flux_Ca",
+                            "-1*fluxOceanfloor.soluteflux_F",               "-1*fluxOceanBurial.flux_F",
                         ]
                     variable_links:
                         sum: net_input_TAlk

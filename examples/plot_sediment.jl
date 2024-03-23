@@ -291,7 +291,7 @@ end
 
 function plot_sediment_FeS_summary(
     output;
-    SmII_species = ["SmIIaqtot", "H2Ssp", "HSm", "FeSaq",],
+    SmII_species = ["TH2S", "H2S", "HS", "FeSaq",],
     FeII_species = ["FeIIsolutetot", "FeII", "FeSaq", "FeIIadsorb", "FeIItot"],
     colT=last(PALEOmodel.get_array(output, "global.tmodel").values), # model time for column plots
     colrange=1:3,
@@ -528,13 +528,16 @@ function plot_budgets(
     output;
     budgets=[],
     ylims=(-1e-6, 1e-6),
+    clamp_y_fac = 100.0, # workaround for Plots.jl bug: values too much larger than ylims result in whole line being omitted
     colrange=1:3,
     pager=PALEOmodel.DefaultPlotPager(),
 )
    
     for i in colrange
         pager(
-            plot(title="budget check $i", output, budgets, (cell=i,); ylabel="net input (mol yr-1)", ylims)
+            plot(title="budget check $i", output, budgets, (cell=i,); 
+                ylabel="net input (mol yr-1)", 
+                ylims, map_values=y->clamp(y, clamp_y_fac*ylims[1], clamp_y_fac*ylims[2])),
         )
     end
 

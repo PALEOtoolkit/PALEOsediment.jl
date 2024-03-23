@@ -15,7 +15,7 @@ SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 Sundials = "c3572dad-4567-51f8-b174-8c6c989267f4"
 
 [compat]
-PALEOaqchem = "0.3.9"
+PALEOaqchem = "0.3.10"
 
 [extras]
 PALEOboxes = "804b410e-d900-4b2a-9ecd-f5a06d4c1fd4"

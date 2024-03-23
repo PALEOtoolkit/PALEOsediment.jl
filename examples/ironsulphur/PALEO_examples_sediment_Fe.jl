@@ -15,6 +15,7 @@ global_logger(ConsoleLogger(stderr,Logging.Info))
 
 include("config_sediment_expts.jl")
 include("../plot_sediment.jl")
+include("../SumColumns_dev.jl")
 
 model = PB.create_model_from_config(
     joinpath(@__DIR__, "PALEO_examples_sediment_ironsulphur_cfg.yaml"), 
@@ -31,7 +32,8 @@ config_sediment_expts(model,
     ]
 ) 
 
-tspan=(0.0, 10000.0)
+# tspan=(0.0, 10000.0)
+tspan=(0.0, 1e6)
 
 initial_state, modeldata = PALEOmodel.initialize!(model)
 
@@ -45,7 +47,7 @@ PALEOmodel.SteadyState.steadystate_ptcForwardDiff(
     deltat_fac=2.0,
     solvekwargs=(
         ftol=1e-7,
-        iterations=20,
+        iterations=50,
         method=:newton,
         linesearch=LineSearches.Static(),
         apply_step! = PALEOmodel.SolverFunctions.StepClampMultAll!(newton_min, newton_max, newton_min_ratio, newton_max_ratio),
@@ -68,11 +70,20 @@ PALEOmodel.SteadyState.steadystate_ptcForwardDiff(
 # multiple plots per screen
 gr(size=(900, 600))
 pager = PALEOmodel.PlotPager((1,3), (legend_background_color=nothing, margin=(5, :mm)))
+colrange=1:3
 
-plot_Corg_O2(run.output; Corgs=["Corg1", "Corg2"], colT=[first(tspan), last(tspan)], pager=pager)
-plot_solutes(run.output; colT=[first(tspan), last(tspan)], solutes=["P", "SO4", "H2S", "CH4", "FeII"], pager=pager)
-plot_solids(run.output; colT=[first(tspan), last(tspan)], solids=["FeHR", "FeMR", "FePR"], pager=pager)
-plot_rates(run.output; colT=[first(tspan), last(tspan)], remin_rates=["reminOrgOxO2", "reminOrgOxFeIIIOx", "reminOrgOxSO4", "reminOrgOxCH4"], pager=pager)
+plot_budgets(
+    run.output;
+    budgets="budgets.net_input_".*["C", "P", "S", "Fe", "TAlk"],
+    ylims=(-1e-6, 1e-6),
+    pager, colrange,
+)
+pager(:newpage)
+
+plot_Corg_O2(run.output; Corgs=["Corg1", "Corg2"], colT=[first(tspan), last(tspan)], colrange, pager)
+plot_solutes(run.output; colT=[first(tspan), last(tspan)], solutes=["P", "SO4", "H2S", "CH4", "FeII"], colrange, pager)
+plot_solids(run.output; colT=[first(tspan), last(tspan)], solids=["FeHR", "FeMR", "FePR"], colrange, pager)
+plot_rates(run.output; colT=[first(tspan), last(tspan)], remin_rates=["reminOrgOxO2", "reminOrgOxFeIIIOx", "reminOrgOxSO4", "reminOrgOxCH4"], colrange, pager)
 
 pager(:newpage)
 
