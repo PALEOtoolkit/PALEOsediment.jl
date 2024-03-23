@@ -28,4 +28,8 @@ Differences from Zhao (2020):
   follow from charge balance). 
 - Adsorbed Fe contribution to TAlk is implemented directly by including budget and transport contributions.
 
-## TODO a minimal config with SO4, H2S, CH4
+## Minimal config with SO4, H2S, CH4 only
+
+    julia> include("PALEO_examples_sediment_FOAM.jl")
+
+Minimal configuration with no N, Mn, Fe, pH and speciation, or minerals

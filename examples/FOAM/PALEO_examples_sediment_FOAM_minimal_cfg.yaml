@@ -1,0 +1,285 @@
+########################################################
+# Minimal FOAM test case
+# Minimal configuration with no N, Mn, Fe, pH and speciation, or minerals
+##############################################################
+sediment_Corg_Stest:
+    parameters:
+        num_columns: 4
+        CIsotope: ScalarData
+        SIsotope: ScalarData
+    domains:
+        global:
+            # scalar domain
+     
+        fluxOceanfloor:
+            reactions:
+                floorstubparticulateflux:
+                    class: ReactionFluxTarget
+                    parameters:
+                        const_stub: true
+                        target_prefix: particulateflux_
+                        fluxlist: ["Corg",]
+                    
+                    variable_attributes:
+                        #                               FOAM test case
+                        particulateflux_Corg:initial_value: 3.0 # mol/column/yr-1 (0.3 mmol cm-2 yr-1 * 1e4)
+                        # particulateflux_Corg:initial_delta: -25.0
+
+                floorstubsoluteflux:
+                    class: ReactionFluxTarget
+                    parameters:
+                        target_prefix: soluteflux_
+                        fluxlist: ["O2", "DIC", "TAlk", "P", "SO4", "H2S", "CH4", ]
+                   
+
+        fluxOceanBurial:       
+            reactions:
+                
+                burialfluxes:
+                    class: ReactionFluxTarget
+                    parameters:
+                        target_prefix: flux_
+                        fluxlist: [
+                            "Corg_1", "Corg_2", "Corg_3", "Corg_4", "Corg_5", "Corg_6", "Corg_7", "Corg_8", "Corg_9", "Corg_10", "Corg_11", "Corg_12", "Corg_13", "Corg_14",
+                            "O2", "DIC", "TAlk", "P", "SO4", "H2S", "CH4", # solutes
+                        ]
+                
+                total_Corg: # add up the multi-G fractions -> flux_Corg
+                    class: ReactionVectorSum
+                    parameters:
+                        vars_prefix: flux_                        
+                        vars_to_add: ["Corg_1", "Corg_2", "Corg_3", "Corg_4", "Corg_5", "Corg_6", "Corg_7", "Corg_8", "Corg_9", "Corg_10", "Corg_11", "Corg_12", "Corg_13", "Corg_14" ]
+                    variable_links:
+                        sum: flux_Corg
+ 
+        oceanfloor:
+
+            reactions:
+                grid:
+                    class: ReactionUnstructuredVectorGrid
+                    parameters:
+                        ncells: external%num_columns
+                
+                floorstubphys: 
+                    class: ReactionConst
+                    parameters:
+                        constnames: ["Afloor", "zfloor", "temp", "sal", "phi", "phimin", "w_accum", "zbioturb", "zbioirrig", "Dbio", "alpha"]
+                    variable_attributes:
+                        #                       FOAM Zhao (2022) test case
+                        Afloor:initial_value:   1.0 # m^2 column area
+                        zfloor:initial_value:   -10.0  # 2 bar pressure
+                        temp:initial_value:     285.15 # 12 C
+                        sal:initial_value:      28.4 # psu
+                        phi:initial_value:      0.64 # surface porosity
+                        phimin:initial_value:   0.64 # minimum porosity
+                        w_accum:initial_value:  0.2e-2 # 0.2 cm yr-1
+                        zbioturb:initial_value:  3e-2  # m, (3 cm bioturbation characteristic depth)
+                        zbioirrig:initial_value: 0.8e-2 # m (0.8 cm)
+                        Dbio:initial_value:     3.16e-4 # m^2 yr-1 (1e-7 cm^2 s-1 * 3.16e7 / 100^2
+                        alpha:initial_value:    100.0 # yr-1 
+
+                floorstubsoluteconc: 
+                    class: ReactionConst
+                    parameters:
+                        constnames: ["O2_conc", "DIC_conc", "TAlk_conc", "P_conc", "SO4_conc", "H2S_conc", "CH4_conc"]
+                    variable_attributes:
+                        #                       Zhao (2020) FOAM test case
+                        O2_conc:initial_value:   0.15 # (mol m-3) 0.15e-3 mmol cm-3 * 1e3
+                        DIC_conc:initial_value:  2.0  # (mol m-3) 2000 uM
+                        TAlk_conc:initial_value:  2.2 # (mol m-3) 2200 uM
+                        SO4_conc:initial_value:  22.0   #
+                        H2S_conc:initial_value:   0.0  # mol m-3
+                        CH4_conc:initial_value:   0.0  # mol m-3
+                        P_conc:initial_value:   0.001  # mol m-3
+                        
+
+                transfer_particulatefluxOceanfloor:
+                    class: ReactionFluxTransfer
+                    parameters:
+                        transfer_matrix:      Identity
+                        input_fluxes:         fluxOceanfloor.particulateflux_$fluxname$
+                        output_fluxes:        sediment.oceanfloor.$fluxname$_sms
+                    variable_links:                       
+
+        sediment:
+            reactions:
+                bioratesed:
+                    class: ReactionSedimentBioRates
+                    parameters:
+                        f_bioTurbDepth:         Exp2Cutoff
+                        f_bioIrrigDepth:        Exp1Cutoff
+                        separate_zbio:          true
+                        f_bioO2:                None
+                        # bioO2halfmax:           20e-3 # (mol m-3) (Dale 2015 'a', 20 uM)
+                        # bioO2decreaserate:      12e-3 # (mol m-3) (Dale 2015 'b', 12 uM)
+
+                transportsed:
+                    class: ReactionSedimentTransport
+                    parameters:
+                        L:                              3.0  # (m) column length
+                        grid_eta:                       1.5 # (m) length scale for grid transformation
+                        ncellspercol:                   300 # 100
+
+                        # short column for testing
+                        # L:                              0.3  # (m) column length
+                        # grid_eta:                       0.15 # (m) length scale for grid transformation
+                        # ncellspercol:                   100
+
+                        f_grid:                         quadratic                        
+                        zdbl:                           0.04e-2  # diffusive boundary layer at sediment-water interface
+                        f_porosity:                     Const # 
+                        # zpor:                           0.1 # (m) lengthscale for porosity decrease
+                        w_solute:                       true  # include solute advection (w_solute = w_solid at base of column)
+                       
+                reservoir_O2:
+                    class: ReactionReservoirTotal            
+                    variable_links:
+                        R*:                             O2*
+                        volume:                         volume_solute
+                    variable_attributes:
+                        R_conc:vphase:                  VP_Solute                    
+                        R:initial_value:                1e-12  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
+                        R:norm_value:                   200e-3                        
+                        R_conc:diffusivity_speciesname: O2
+
+
+                reservoir_SO4:
+                    class: ReactionReservoirTotal            
+                    variable_links:
+                        R*:                             SO4*
+                        volume:                         volume_solute
+                    variable_attributes:
+                        R_conc:vphase:                  VP_Solute                    
+                        R:initial_value:                1e-12  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
+                        R:norm_value:                   20000e-3                        
+                        R_conc:diffusivity_speciesname: SO4
+
+                reservoir_H2S:
+                    class: ReactionReservoirTotal            
+                    variable_links:
+                        R*:                             H2S*
+                        volume:                         volume_solute
+                    variable_attributes:
+                        R_conc:vphase:                  VP_Solute                    
+                        R:initial_value:                1e-12  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
+                        R:norm_value:                   200e-3                        
+                        R_conc:diffusivity_speciesname: H2S 
+
+                reservoir_CH4:
+                    class: ReactionReservoirTotal            
+                    variable_links:
+                        R*:                             CH4*
+                        volume:                         volume_solute
+                    variable_attributes:
+                        R_conc:vphase:                  VP_Solute                    
+                        R:initial_value:                1e-12  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
+                        R:norm_value:                   200e-3                        
+                        R_conc:diffusivity_speciesname: CH4
+
+                reservoir_P:
+                    class: ReactionReservoirTotal            
+                    variable_links:
+                        R*:                             P*
+                        volume:                         volume_solute
+                    variable_attributes:
+                        R_conc:vphase:                  VP_Solute                    
+                        R:initial_value:                1e-12  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
+                        R:norm_value:                   2e-3                        
+                        R_conc:diffusivity_speciesname: PO4
+                        # R_conc:gamma:                   0.2 # reduced bioirrigation 
+
+                reservoir_DIC:
+                    class: ReactionReservoirTotal
+                    parameters:
+                        field_data: external%CIsotope
+                    variable_links:
+                        R*:                             DIC*
+                        volume:                         volume_solute
+                    variable_attributes:
+                        R_conc:vphase:                  VP_Solute                    
+                        R:initial_value:                1e-12  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
+                        R:norm_value:                   1000e-3                        
+                        R_conc:diffusivity_speciesname: HCO3 # use for molecular diffusivity HCO3- as the major species
+
+                reservoir_TAlk:
+                    class: ReactionReservoirTotal
+                    variable_links:
+                        R*:                             TAlk*
+                        volume:                         volume_solute
+                    variable_attributes:
+                        R_conc:vphase:                  VP_Solute                    
+                        R:initial_value:                1e-12  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
+                        R:norm_value:                   1000e-3                        
+                        R_conc:diffusivity_speciesname: Na # TODO - use major cations for molecular diffusivity
+
+                
+                reservoir_Corg:
+                    class: ReactionRCmultiG
+                    parameters:
+                        #                   1     2    3      4    5      6     7     8     9     10    11   12   13   14
+                        k_bin_edges:        [1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1e0] # , 1e1, 1e2] #  yr-1
+                        k_dist_modifier: [1.0,   1.0, 1.0,   1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0, 1.0] #,  1.0, 1.0]
+                        a: 0.15 # yr-1  reactive-continuum model average lifetime
+                        v: 0.12 # reactive-continuum model shape parameter
+                        field_data: external%CIsotope
+                        # oxidant_dependent_rate: true  # scale overall rates by factor from variable freminOrgTot
+                        oxidant_dependent_rate: false
+
+                    variable_links:
+                        volume:                         volume_solid
+                        # POC_decay:                      DIC_sms  # dump all Corg -> DIC for test case
+
+                    variable_attributes:
+                        Corg_*_conc:vphase:             VP_Solid
+                        Corg_*:initial_value:           1e-12
+
+                pocdecaycomponents:
+                    class: ReactionFluxToComponents
+                    parameters: 
+                        outputflux_prefix: remin_                   
+                        outputflux_names: ["Corg", "N", "P"]
+                        #                  106/106 10/106  1/106
+                        outputflux_stoich: [1.0, 0.0943, 0.009434]   # must match input Corg stoich
+                    variable_links:
+                        inputflux:  POC_decay
+                   
+                reminsed:
+                    class: ReactionReminO2_SO4_CH4
+
+                    parameters:
+                        oxreminlimit:       20e-3 # (mol m-3) Zhao (2020)
+                        SO4reminlimit:      1600.0e-3 # (mol m-3) Zhao (2020)
+                       
+
+                    variable_links:
+                        soluteflux_*:   "*_sms"
+                        
+
+                redox_H2S_O2:
+                    class: ReactionRedoxH2S_O2
+                    parameters:           
+                        R_H2S_O2: 1.6e2 # (mol m-3)-1 1.6e5*1e-3 Zhao (2020) R12
+                    variable_links:
+                        volume:                         volume_solute
+                        
+
+                redox_CH4_O2:
+                    class: ReactionRedoxCH4_O2
+                    parameters:                 
+                        R_CH4_O2: 1e7 # (mol m-3)-1 1e10*1e-3 Zhao (2020) R13
+                    variable_links:
+                        volume:                         volume_solute
+
+                redox_CH4_SO4:
+                    class: ReactionRedoxCH4_SO4
+
+                    parameters:                 
+                        R_CH4_SO4: 10.0 # (mol m-3)-1 1e4*1e-3 Zhao (2020) R18
+
+                    variable_links:
+                        volume:                         volume_solute
+
+        sedimentfloor:
+            reactions:
+           
+

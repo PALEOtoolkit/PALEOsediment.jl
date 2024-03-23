@@ -477,6 +477,7 @@ function plot_summary_stacked(
     species=["P", "SO4", "H2S", "CH4"],
     others=[],
     budgets=[],
+    plot_pHfree=true,
     xscale=:identity,
     xlims=(0, Inf),
     pHxlims=(-Inf, Inf),
@@ -506,12 +507,14 @@ function plot_summary_stacked(
         )
     end
 
-    pager(
-        plot(
-            title="pHfree t=$colT (yr)", output, "sediment.pHfree", (tmodel=colT, column=collect(colrange)); 
-            legend=:bottomleft, labellist=string.(collect(colrange)), xlabel="pH (total)", swap_xy=true, xlims=pHxlims, ylims,
+    if plot_pHfree
+        pager(
+            plot(
+                title="pHfree t=$colT (yr)", output, "sediment.pHfree", (tmodel=colT, column=collect(colrange)); 
+                legend=:bottomleft, labellist=string.(collect(colrange)), xlabel="pH (free)", swap_xy=true, xlims=pHxlims, ylims,
+            )
         )
-    )
+    end
 
     if !isempty(budgets)
         for i in colrange
