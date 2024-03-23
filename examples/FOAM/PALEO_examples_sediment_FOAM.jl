@@ -73,17 +73,20 @@ run = PALEOmodel.Run(model=model, output = PALEOmodel.OutputWriters.OutputMemory
 
 # PTC, Newton, no line search
 # Bounds and max step size for Newton solve. NB requires min/max ratio for robustness so check all tracers initial_value is not zero
-newton_min, newton_max, newton_min_ratio, newton_max_ratio = 1e-80, 1e6, 0.1, 10.0
+# newton_min, newton_max, newton_min_ratio, newton_max_ratio = 1e-80, 1e6, 0.1, 10.0
+newton_min, newton_max, newton_min_ratio, newton_max_ratio = 1e-30, 1e6, 1e-2, 1e2
 PALEOmodel.SteadyState.steadystate_ptcForwardDiff(
     run, initial_state, modeldata, tspan, 1e-6,
     deltat_fac=2.0,
     solvekwargs=(
         # ftol=1e-7,
         ftol=1e-3,
-        iterations=50, 
+        iterations=20,
+        # iterations=50, 
         method=:newton,
         linesearch=LineSearches.Static(),
         apply_step! = PALEOmodel.SolverFunctions.StepClampMultAll!(newton_min, newton_max, newton_min_ratio, newton_max_ratio),
+        linsolve=PALEOmodel.SolverFunctions.SparseLinsolveUMFPACK(),
         # store_trace=true,
         # show_trace=true, 
     ),
@@ -137,7 +140,7 @@ end
 pager = PALEOmodel.PlotPager((2, 4), (legend_background_color=nothing, margin=(5, :mm)))
 plot_budgets(
     run.output;
-    budgets="budgets.net_input_".*["C", "P", "S", "Mn", "Fe", "TAlk"],
+    budgets="budgets.net_input_".*["C", "N", "P", "S", "Mn", "Fe", "TAlk"],
     ylims=(-1e-6, 1e-6),
     pager, colrange,
 )

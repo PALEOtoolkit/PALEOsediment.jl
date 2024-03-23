@@ -250,10 +250,16 @@ sediment_FOAM:
                 reservoir_Na: {class: ReactionReservoirTotal, variable_links: {R*: Na*, volume: volume_solute}, 
                     variable_attributes: {R_conc%diffusivity_speciesname: F, R_conc%vphase: VP_Solute, R%initial_value: 380.56, R%norm_value: 1e1 }}
 
-
                 # constant concentration only, modern value
                 reservoir_B: {class: ReactionReservoirConst, variable_links: {R*: B*},
                     variable_attributes: {R_conc%initial_value: 0.427}}
+
+                # No TAlk or N2 reservoir, but track  _sms fluxes to allow budget check
+                N2_sms: {class: ReactionFluxTarget, parameters: {target_prefix: "",
+                    fluxlist: ["N2_sms"]}}
+
+                N2_sms_sum_columns: {class: ReactionSumColumns_dev,
+                    variable_links: {X: N2_sms, X_sum: budgets.N2_column_sms}}
 
                 ###########################################################################
                 # Solid phase reservoirs
@@ -350,46 +356,7 @@ sediment_FOAM:
                         R%initial_value:                1e-12  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
                         R%norm_value:                   2e-3                
 
-                ###################################################################################
-                # POC remineralization 
-                ################################################################################
-                   
-                pocdecaycomponents:
-                    class: ReactionFluxToComponents
-                    parameters: 
-                        outputflux_prefix: remin_                   
-                        outputflux_names: ["Corg", "N", "P"]
-                        #                  106/106 10/106  1/106
-                        outputflux_stoich: [1.0, 0.0943, 0.009434]   # must match input Corg stoich
-                        # outputflux_stoich: [1.0, 0.0, 0.009434]   # remove N to test TAlk balance
-                    variable_links:
-                        inputflux:  POC_decay
-
-                reminsed:
-                    class: ReactionReminO2_NO3_Mn_Fe_SO4_CH4
-
-                    parameters:
-                        oxreminlimit:       20e-3 # (mol m-3) Zhao (2020)
-                        NO3reminlimit:      4e-3 # (mol m-3) Zhao (2020)
-                        MnIVOxreminlimit:   80.0 # (mol m-3) = 32e-6*2.5e6 (32 umol MnO2 g-1 assuming dry density is 2.5 g/cm^3 (= 2.5e6 g m^-3), Zhao (2020))
-                        FeIIIOxreminlimit:  162.5 # (mol m-3) = 65e-6*2.5e6 (65 umol Fe(OH)3 g-1 assuming dry density is 2.5 g/cm^3 (= 2.5e6 g m^-3), Zhao (2020))
-                        SO4reminlimit:      1600.0e-3 # (mol m-3) Zhao (2020)
-                        aSO4:               0.2       
-                        oxidant_dependent_rate: true
-                        # oxidant_dependent_rate: false
-
-                    variable_links:
-                        FeIIIOx_conc:      FeHR_conc
-                        MnIVOx_conc:       MnHR_conc
-                        soluteflux_*:   "*_sms"
-                        soluteflux_H2S: TH2S_sms
-                        soluteflux_FeII:   FeIItot_sms
-                        soluteflux_FeIIIOx: FeHR_sms
-                        soluteflux_MnIVOx: MnHR_sms
-                        soluteflux_TNH3:   TNH3_sms
-                        soluteflux_P:      TP_sms
-
-
+                
                 #########################################################
                 # Equilibrium chemistry
                 #########################################################
@@ -478,6 +445,46 @@ sediment_FOAM:
                         PO4%diffusivity_speciesname:    PO4,     PO4%totalnames:     ["TP", "2*TAlk"],  PO4%vphase:    VP_Solute,  PO4%advect:      true,
                     }
 
+                ###################################################################################
+                # POC remineralization 
+                ################################################################################
+                   
+                pocdecaycomponents:
+                    class: ReactionFluxToComponents
+                    parameters: 
+                        outputflux_prefix: remin_                   
+                        outputflux_names: ["Corg", "N", "P"]
+                        #                  106/106 10/106  1/106
+                        outputflux_stoich: [1.0, 0.0943, 0.009434]   # must match input Corg stoich
+                        # outputflux_stoich: [1.0, 0.0, 0.009434]   # remove N to test TAlk balance
+                    variable_links:
+                        inputflux:  POC_decay
+
+                reminsed:
+                    class: ReactionReminO2_NO3_Mn_Fe_SO4_CH4
+
+                    parameters:
+                        oxreminlimit:       20e-3 # (mol m-3) Zhao (2020)
+                        NO3reminlimit:      4e-3 # (mol m-3) Zhao (2020)
+                        MnIVOxreminlimit:   80.0 # (mol m-3) = 32e-6*2.5e6 (32 umol MnO2 g-1 assuming dry density is 2.5 g/cm^3 (= 2.5e6 g m^-3), Zhao (2020))
+                        FeIIIOxreminlimit:  162.5 # (mol m-3) = 65e-6*2.5e6 (65 umol Fe(OH)3 g-1 assuming dry density is 2.5 g/cm^3 (= 2.5e6 g m^-3), Zhao (2020))
+                        SO4reminlimit:      1600.0e-3 # (mol m-3) Zhao (2020)
+                        aSO4:               0.2       
+                        oxidant_dependent_rate: true
+                        # oxidant_dependent_rate: false
+
+                    variable_links:
+                        FeIIIOx_conc:       FeHR_conc
+                        MnIVOx_conc:        MnHR_conc
+                        soluteflux_*:       "*_sms"
+                        soluteflux_H2S:     TH2S_sms
+                        soluteflux_FeII:    FeIItot_sms
+                        soluteflux_FeIIIOx: FeHR_sms
+                        soluteflux_MnIVOx:  MnHR_sms
+                        soluteflux_TNH3:    TNH3_sms
+                        soluteflux_P:       TP_sms
+
+
                 #######################################
                 # Secondary redox
                 ###########################################
@@ -532,7 +539,7 @@ sediment_FOAM:
                     K: 2e1,         Reactants: ["MnHR", "TH2S"],             Products: ["MnII", "S0", "2*TAlk"]},    variable_links: {volume: volume_solid}}
  
                 # H2S + MnHR + 2 H+ -> Mn++ + S0 + 2 H2O,  K = guessed 1e-2 * rate for MnHR (no value in Zhao 2020)
-                redox_MnHR_H2S: {class: ReactionAqKinetic, parameters: {
+                redox_MnMR_H2S: {class: ReactionAqKinetic, parameters: {
                     K: 2e-1,        Reactants: ["MnMR", "TH2S"],             Products: ["MnII", "S0", "2*TAlk"]},    variable_links: {volume: volume_solid}}
 
                 # H2S + 2*FeHR + 4 H+ -> 2*Fe++ + S0 + 3 H2O  K = 8e0 (mol m-3)-1 = 8e3*1e-3 Zhao (2020) R16
@@ -641,33 +648,33 @@ sediment_FOAM:
                 # P-Fe coprecipitation, transfer, and release
                 # gamma = 0.24, P_limit: 10e-3  mol m-3 = 10 uM (Zhao 2020)                
                 PFeHR_coprecip: {class: ReactionPACoPrecip, parameters: {
-                    gamma: 0.24,    P_limit: 10e-3,
+                    gamma: 0.24,    P_limit: 10e-3, P_components: ["-1*TP", "TAlk"],
                     A_rate_stoich_factors: [             1.0,                                       1.0,                                           2.0,                                              2.0]},
                     variable_links: {A_formation_rate_1: redox_FeIItot_O2_FeHR, A_formation_rate_2: redox_FeIItot_ads_O2_FeHR, A_formation_rate_3: redox_MnHR_FeIItot_MnII_FeHR, A_formation_rate_4: redox_MnMR_FeIItot_MnII_FeHR,
                         PA_sms:    PFeHR_sms,   rate_PA_coprecip*:      rate_PFeHR_coprecip*,
-                        P_*: TP_*,}}
+                        P_conc: TP_conc,}}
 
                 PFeHR_release: {class: ReactionPARelease, parameters: {
+                    P_components: ["TP", "-1*TAlk"],
                     A_rate_stoich_factors: [                -4.0,                                   2.0]},
                     variable_links: {A_destruction_rate_1:  reminOrgOxFeIIIOx, A_destruction_rate_2: redox_FeHR_TH2S_FeIItot_S0,
                         A_conc:     FeHR_conc,  PA_conc:                PFeHR_conc,             PA_theta:   PFeHR_theta,
-                        PA_sms:     PFeHR_sms,  rate_PA_release*:       rate_PFeHR_release*,
-                        P_sms:      TP_sms,}}
+                        PA_sms:     PFeHR_sms,  rate_PA_release*:       rate_PFeHR_release*,}}
                         
-                # transfer adsorbed P from FeHR to FeMR phase
+                # transfer all adsorbed P from FeHR to FeMR phase
                 PFeHR_PFeMR: { class: ReactionPARelease, parameters: {
+                    P_components: ["PFeMR"],
                     A_rate_stoich_factors: [               1.0]},
                     variable_links: {A_destruction_rate_1: rate_FeHR_FeMR,
                         A_conc:     FeHR_conc,  PA_conc:                PFeHR_conc,             PA_theta:   PFeHR_theta_unused,
-                        PA_sms:     PFeHR_sms,  rate_PA_release*:       rate_PFeHR_PFeMR*,
-                        P_sms:      PFeMR_sms,}}
+                        PA_sms:     PFeHR_sms,  rate_PA_release*:       rate_PFeHR_PFeMR*,}}
                     
                 PFeMR_release: {class: ReactionPARelease, parameters: {
+                    P_components: ["TP", "-1*TAlk"],
                     A_rate_stoich_factors: [                2.0]},
                     variable_links: {A_destruction_rate_1:  redox_FeMR_TH2S_FeIItot_S0,
                         A_conc:     FeMR_conc,  PA_conc:                PFeMR_conc,             PA_theta:   PFeMR_theta, 
-                        PA_sms:     PFeMR_sms,  rate_PA_release*:       rate_PFeMR_release*,
-                        P_sms:      TP_sms,}}
+                        PA_sms:     PFeMR_sms,  rate_PA_release*:       rate_PFeMR_release*,}}
 
                 
                 # minimal CFA "Omega" that just depends on [TP] and [F]  K = 10e-6 M * 70.0e-6 M = 10e-6*70e-6*1e3^2 = 7e-4 (mol m-3)^2 (ie much simpler than Zhao (2020) R26)
@@ -700,7 +707,7 @@ sediment_FOAM:
                     class: ReactionFluxTarget
                     parameters:
                         target_prefix: ""
-                        fluxlist: ["Biotite_dissolflux"]
+                        fluxlist: ["Biotite_dissolflux", "N2_column_sms"]
 
                 ############################################################################
                 # per-column net input into sediment
@@ -725,6 +732,19 @@ sediment_FOAM:
                         ]
                     variable_links:
                         sum: net_input_C
+
+                budget_N:
+                    class: ReactionVectorSum
+                    parameters:
+                        vars_to_add: [
+                            # stoich factor Norg/Corg = 10/106 = 0.0943
+                            "0.0943*fluxOceanfloor.particulateflux_Corg",   "-0.0943*fluxOceanBurial.flux_Corg",
+                            "-1*fluxOceanfloor.soluteflux_NO3",             "-1*fluxOceanBurial.flux_NO3",
+                            "-1*fluxOceanfloor.soluteflux_TNH3",            "-1*fluxOceanBurial.flux_TNH3",
+                            "-2*N2_column_sms", 
+                        ]
+                    variable_links:
+                        sum: net_input_N
 
                 budget_P:
                     class: ReactionVectorSum

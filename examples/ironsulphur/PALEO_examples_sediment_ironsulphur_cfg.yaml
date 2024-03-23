@@ -9,6 +9,7 @@ sediment_Corg_O2_Fe:
     parameters:
         CIsotope: ScalarData
         SIsotope: ScalarData
+        num_columns: 3
     domains:
         global:
             # scalar domain
@@ -48,7 +49,10 @@ sediment_Corg_O2_Fe:
                     class: ReactionFluxTarget
                     parameters:
                         target_prefix: flux_
-                        fluxlist: ["Corg1", "Corg2", "FeHR", "FeMR", "FePR"]
+                        fluxlist: [
+                            "Corg1", "Corg2", "FeHR", "FeMR", "FePR",
+                            "O2", "P", "SO4", "H2S", "CH4", "FeII", # solutes
+                        ]
                     variable_links:
                         
  
@@ -58,7 +62,7 @@ sediment_Corg_O2_Fe:
                 grid:
                     class: ReactionUnstructuredVectorGrid
                     parameters:
-                        ncells: 3
+                        ncells: external%num_columns
                 
                 floorstubphys: 
                     class: ReactionConst
@@ -118,128 +122,68 @@ sediment_Corg_O2_Fe:
                         f_grid:                         quadratic
                         grid_eta:                       0.075
                         zdbl:                           0.04e-2  # diffusive boundary layer at sediment-water interface
-                       
-                reservoir_O2:
-                    class: ReactionReservoirTotal            
-                    variable_links:
-                        R*:                             O2*
-                        volume:                         volume_solute
-                    variable_attributes:
-                        R_conc:vphase:                  VP_Solute                    
-                        R:initial_value:                0.0  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
-                        R:norm_value:                   200e-3                        
-                        R_conc:diffusivity_speciesname: O2
+                        w_solute:                       true # solute advection
 
-                reservoir_SO4:
-                    class: ReactionReservoirTotal            
-                    variable_links:
-                        R*:                             SO4*
-                        volume:                         volume_solute
-                    variable_attributes:
-                        R_conc:vphase:                  VP_Solute                    
-                        R:initial_value:                0.0  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
-                        R:norm_value:                   20000e-3                        
-                        R_conc:diffusivity_speciesname: SO4
+                ################################################################################
+                # Solute reservoirs
+                #################################################################################
 
-                reservoir_H2S:
-                    class: ReactionReservoirTotal            
-                    variable_links:
-                        R*:                             H2S*
-                        volume:                         volume_solute
-                    variable_attributes:
-                        R_conc:vphase:                  VP_Solute                    
-                        R:initial_value:                1e-30  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
-                        R:norm_value:                   200e-3                        
-                        R_conc:diffusivity_speciesname: H2S 
+                reservoir_O2: {class: ReactionReservoirTotal, variable_links: {R*: O2*, volume: volume_solute}, 
+                    variable_attributes: {R_conc%diffusivity_speciesname: O2, R_conc%vphase: VP_Solute, R%initial_value: 1e-12, R%norm_value: 200e-3 }}
 
-                reservoir_CH4:
-                    class: ReactionReservoirTotal            
-                    variable_links:
-                        R*:                             CH4*
-                        volume:                         volume_solute
-                    variable_attributes:
-                        R_conc:vphase:                  VP_Solute                    
-                        R:initial_value:                0.0  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
-                        R:norm_value:                   200e-3                        
-                        R_conc:diffusivity_speciesname: CH4
+                reservoir_SO4: {class: ReactionReservoirTotal, variable_links: {R*: SO4*, volume: volume_solute}, 
+                    variable_attributes: {R_conc%diffusivity_speciesname: SO4, R_conc%vphase: VP_Solute, R%initial_value: 1e-12, R%norm_value: 10.0 }}
 
-                reservoir_P:
-                    class: ReactionReservoirTotal            
-                    variable_links:
-                        R*:                             P*
-                        volume:                         volume_solute
-                    variable_attributes:
-                        R_conc:vphase:                  VP_Solute                    
-                        R:initial_value:                0.0  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
-                        R:norm_value:                   2e-3                        
-                        R_conc:diffusivity_speciesname: PO4
+                reservoir_H2S: {class: ReactionReservoirTotal, variable_links: {R*: H2S*, volume: volume_solute}, 
+                    variable_attributes: {R_conc%diffusivity_speciesname: H2S, R_conc%vphase: VP_Solute, R%initial_value: 1e-12, R%norm_value: 1.0 }}
 
-                reservoir_FeII:
-                    class: ReactionReservoirTotal            
-                    variable_links:
-                        R*:                             FeII*
-                        volume:                         volume_solute
-                    variable_attributes:
-                        R_conc:vphase:                  VP_Solute                    
-                        R:initial_value:                0.0  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
-                        R:norm_value:                   2e-3                        
-                        R_conc:diffusivity_speciesname: Fe
+                reservoir_CH4: {class: ReactionReservoirTotal, variable_links: {R*: CH4*, volume: volume_solute}, 
+                    variable_attributes: {R_conc%diffusivity_speciesname: CH4, R_conc%vphase: VP_Solute, R%initial_value: 1e-12, R%norm_value: 1.0 }}
 
-                reservoir_Corg1:
-                    class: ReactionReservoirTotal            
-                    variable_links:
-                        R*:                             Corg1*
-                        volume:                         volume_solid
-                    variable_attributes:
-                        R_conc:vphase:                  VP_Solid                        
-                        R:initial_value:                0.0  # concentration m-3 solid phase
-                                                             #  mol m-3              =  g cm-3            / (g mol-1) * m^3 cm-3
-                        R:norm_value:                   2083.3  # mol m-3 solid for 1% TOC  =  2.5  * (1 wt%/100) / 12 * 1e6
+                reservoir_P: {class: ReactionReservoirTotal, variable_links: {R*: P*, volume: volume_solute}, 
+                    variable_attributes: {R_conc%diffusivity_speciesname: HPO4, R_conc%vphase: VP_Solute, R%initial_value: 1e-12, R%norm_value: 1.0 }}
 
-                reservoir_Corg2:
-                    class: ReactionReservoirTotal            
-                    variable_links:
-                        R*:                             Corg2*
-                        volume:                         volume_solid
-                    variable_attributes:
-                        R_conc:vphase:                  VP_Solid                        
-                        R:initial_value:                0.0  # concentration m-3 solid phase
-                                                             #  mol m-3              =  g cm-3            / (g mol-1) * m^3 cm-3
-                        R:norm_value:                   2083.3  # mol m-3 solid for 1% TOC  =  2.5  * (1 wt%/100) / 12 * 1e6
+                reservoir_FeII: {class: ReactionReservoirTotal, variable_links: {R*: FeII*, volume: volume_solute}, 
+                    variable_attributes: {R_conc%diffusivity_speciesname: Fe, R_conc%vphase: VP_Solute, R%initial_value: 1e-12, R%norm_value: 1.0 }}
 
-                reservoir_FeHR:
-                    class: ReactionReservoirTotal            
-                    variable_links:
-                        R*:                             FeHR*
-                        volume:                         volume_solid
-                    variable_attributes:
-                        R_conc:vphase:                  VP_Solid                        
-                        R:initial_value:                0.0  # concentration m-3 solid phase
-                                                             #  mol m-3              =  g cm-3            / (g mol-1) * m^3 cm-3
-                        R:norm_value:                   1.0  # mol m-3 solid
+                # No TAlk or DIC reservoirs, but track  _sms fluxes to allow budget check
+                TAlk_DIC_sms: {class: ReactionFluxTarget, parameters: {target_prefix: "",
+                    fluxlist: ["TAlk_sms", "DIC_sms"]}}
 
-                reservoir_FeMR:
-                    class: ReactionReservoirTotal            
-                    variable_links:
-                        R*:                             FeMR*
-                        volume:                         volume_solid
-                    variable_attributes:
-                        R_conc:vphase:                  VP_Solid                        
-                        R:initial_value:                0.0  # concentration m-3 solid phase
-                                                             #  mol m-3              =  g cm-3            / (g mol-1) * m^3 cm-3
-                        R:norm_value:                   1.0  # mol m-3 solid
+                TAlk_sms_sum_columns: {class: ReactionSumColumns_dev,
+                    variable_links: {X: TAlk_sms, X_sum: budgets.TAlk_column_sms}}
 
-                reservoir_FePR:
-                    class: ReactionReservoirTotal            
-                    variable_links:
-                        R*:                             FePR*
-                        volume:                         volume_solid
-                    variable_attributes:
-                        R_conc:vphase:                  VP_Solid                        
-                        R:initial_value:                0.0  # concentration m-3 solid phase
-                                                             #  mol m-3              =  g cm-3            / (g mol-1) * m^3 cm-3
-                        R:norm_value:                   1.0  # mol m-3 solid
-                                         
+                DIC_sms_sum_columns: {class: ReactionSumColumns_dev,
+                    variable_links: {X: DIC_sms, X_sum: budgets.DIC_column_sms}}
+
+                ###########################################################################
+                # Solid phase reservoirs
+                #########################################################################
+
+                # Particulate organic matter
+                #                   mol m-3                              =  g cm-3            / (g mol-1) * m^3 cm-3
+                #   concentration = 2083.3  mol (m3 solid)-1 for 1% TOC  =  2.5  * (1 wt%/100) / 12 * 1e6
+                reservoir_Corg1: {class: ReactionReservoirTotal, variable_links: {R*: Corg1*, volume: volume_solid},
+                    variable_attributes: {R_conc%vphase: VP_Solid, R%initial_value: 1e-12, R%norm_value: 1.0}}
+
+                reservoir_Corg2: {class: ReactionReservoirTotal, variable_links: {R*: Corg2*, volume: volume_solid},
+                    variable_attributes: {R_conc%vphase: VP_Solid, R%initial_value: 1e-12, R%norm_value: 1.0}}
+
+                # ~ Fe(OH)3 (an FeIII oxide)
+                reservoir_FeHR: {class: ReactionReservoirTotal, variable_links: {R*: FeHR*, volume: volume_solid},
+                    variable_attributes: {R_conc%vphase: VP_Solid, R%initial_value: 1e-12, R%norm_value: 1.0}}
+
+                reservoir_FeMR: {class: ReactionReservoirTotal, variable_links: {R*: FeMR*, volume: volume_solid},
+                    variable_attributes: {R_conc%vphase: VP_Solid, R%initial_value: 1e-12, R%norm_value: 1.0}}
+
+                reservoir_FePR: {class: ReactionReservoirTotal, variable_links: {R*: FePR*, volume: volume_solid},
+                    variable_attributes: {R_conc%vphase: VP_Solid, R%initial_value: 1e-12, R%norm_value: 1.0}}
+
+
+                ###################################################################################
+                # POC remineralization 
+                ################################################################################           
+
                 pocdecay1:
                     class: ReactionParticleDecay
                     parameters:
@@ -262,18 +206,10 @@ sediment_Corg_O2_Fe:
                         outputflux_prefix: remin_                   
                         outputflux_names: ["Corg", "N", "P"]
                         #                  106/106 16/106  1/106
-                        outputflux_stoich: [1.0, 0.15094, 0.009434]   # must match input Corg stoich
+                        # outputflux_stoich: [1.0, 0.15094, 0.009434]   # must match input Corg stoich
+                        outputflux_stoich: [1.0, 0.0, 0.009434]   # no N to simplify TAlk budget check
                     variable_links:
                         inputflux:  POC_decay
-
-                FeHRdecay:
-                    class: ReactionParticleDecay
-                    parameters:
-                        decay_timescale:     0.7  # yr, Dale (2015)
-                    variable_links:
-                        Particle*:       FeHR*
-                        decayflux:       FeMR_sms
-
                    
                 reminsed:
                     class: ReactionReminO2_Fe_SO4_CH4
@@ -288,86 +224,135 @@ sediment_Corg_O2_Fe:
                         soluteflux_*:   "*_sms"
                         soluteflux_FeIIIOx: FeHR_sms
 
-                redox_H2S_O2:
-                    class: ReactionRedoxH2S_O2
+                #######################################
+                # Secondary redox
+                ###########################################
 
-                    parameters:           
-                        R_H2S_O2: 3e5 # Boudreau (1997)
-                        # R_H2S_O2: 3.65e4 # 3.65e3 # (mol m-3) yr-1
-                        # R_H2S_O2: 7e3 # slow > 1e6 iters rate for numerical efficiency (mol m-3) yr-1
-                        # R_H2S_O2: 3.65e3 # fast reduce rate for numerical efficiency (mol m-3) yr-1
-                        # R_H2S_O2: 1.8e3 # fast reduce rate for numerical efficiency (mol m-3) yr-1
-                    variable_links:
-                        volume:                         volume_solute
+                # O2 + 0.5 H2S -> 0.5 SO4-- + H+,         K (mol m-3)-1 = 3e8*1e-3 # Boudreau (1997)
+                redox_H2S_O2:   {class: ReactionAqKinetic, parameters: {
+                    K: 3e5,         Reactants: ["O2", "0.5*H2S"],           Products: ["0.5*SO4", "-1*TAlk"]},          variable_links: {volume: volume_solute}}
 
-                redox_CH4_O2:
-                    class: ReactionRedoxCH4_O2
+                # O2 + 0.5 CH4 -> 0.5 DIC (CO2) + H2O,  K (mol m-3)-1 = 1e7 = 1e10*1e-3, Boudreau (1997)
+                redox_CH4_O2:   {class: ReactionAqKinetic, parameters: {
+                    K: 1e7,         Reactants:  ["O2", "0.5*CH4"],          Products: ["0.5*DIC"],},                    variable_links: {volume: volume_solute}}
 
-                    parameters:                 
-                        # R_CH4_O2: 1e4 # reduce rate for numerical stability 
-                        R_CH4_O2: 1e7 # (mol m-3) yr-1 (1e10 mol/l yr-1) Boudreau (1997)
+                # SO4-- + CH4 + 2 H+ -> DIC + H2S + 2H2O, K (mol m-3)-1 = 1e4*1e-3 
+                redox_CH4_SO4:  {class: ReactionAqKinetic, parameters: {
+                    K: 1e1,         Reactants:  ["SO4", "CH4"],             Products: ["DIC", "H2S", "2*TAlk"]},       variable_links: {volume: volume_solute}}
 
-                    variable_links:
-                        volume:                         volume_solute
+                # Fe++ + 1/4 O2 + H2O -> FeIIIOx + 2 H+, aerobic oxidation of FeII, K = 5e5 # (mol m-3)-1 yr-1, 5e8 M-1 yr-1 Dale (2015)
+                redox_FeII_O2:  {class: ReactionAqKinetic, parameters: {
+                    K: 5e5,         Reactants: ["FeII", "0.25*O2"],         Products: ["FeHR", "-2*TAlk"]},             variable_links: {volume: volume_solute}}
 
-                redox_CH4_SO4:
-                    class: ReactionRedoxCH4_SO4
+                # 1/8 H2S + FeHR + 7/4 H+ -> Fe++ + 1/8 SO4-- + H2O,  K = 100 M-0.5 yr-1        = 100*3.16e-2 (mol m-3)^-0.5 yr-1
+                redox_FeHR_H2S: {class: ReactionAqKinetic, parameters: {
+                    K: 3.16e0,      Reactants: ["FeHR", "0.125*H2S"],       Products: ["FeII", "0.125*SO4", "1.75*TAlk"],
+                                    Reactant_concs: ["FeHR_conc", "H2S_conc"], Rate_functions:  ["linear", "sqrt"]},    variable_links: {volume: volume_solid}}
 
-                    parameters:                 
-                        R_CH4_SO4: 10.0 # (mol m-3) yr-1
+                # 1/8 H2S + FeMR + 7/4 H+ -> Fe++ + 1/8 SO4-- + H2O,  K = 0.1 M-0.5 yr-1        = 0.1*3.16e-2 (mol m-3)^-0.5 yr-1
+                redox_FeMR_H2S: {class: ReactionAqKinetic, parameters: {
+                    K: 3.16e-3,     Reactants: ["FeMR", "0.125*H2S"],       Products: ["FeII", "0.125*SO4", "1.75*TAlk"],
+                                    Reactant_concs: ["FeMR_conc", "H2S_conc"], Rate_functions:  ["linear", "sqrt"]},    variable_links: {volume: volume_solid}}
 
-                    variable_links:
-                        volume:                         volume_solute
+                # 1/8 H2S + FePR + 7/4 H+ -> Fe++ + 1/8 SO4-- + H2O,  K = 3e-4 M-0.5 yr-1        = 3e-4*3.16e-2 (mol m-3)^-0.5 yr-1
+                redox_FePR_H2S: {class: ReactionAqKinetic, parameters: {
+                    K: 9.48e-6,     Reactants: ["FePR", "0.125*H2S"],       Products: ["FeII", "0.125*SO4", "1.75*TAlk"],        
+                                    Reactant_concs: ["FePR_conc", "H2S_conc"], Rate_functions:  ["linear", "sqrt"]},    variable_links: {volume: volume_solid}}
 
-                redox_FeII_O2:
-                    class: ReactionRedoxFeII_O2
+                ###########################################
+                # Mineral formation / dissolution
+                ###########################################
 
-                    parameters:                     
-                        R_FeII_O2: 5e5 # (mol m-3)-1 yr-1,  5e8 M yr-1 = 5e8*1e-3 (mol m-3) yr-1, Dale (2015)
-
-                    variable_links:
-                        volume:                         volume_solute
-                        FeIIIOx*: FeHR*
-
-
-                redox_FeHR_H2S:
-                    class: ReactionRedoxFeIII_H2S
-
+                FeHRdecay:
+                    class: ReactionParticleDecay
                     parameters:
-                        R_FeIII_H2S: 3.16 #  (mol m-3)^-0.5 yr-1, 100 M-0.5 yr-1        = 100*3.16e-2 (mol m-3)^-0.5 yr-1
-
+                        decay_timescale:     0.7  # yr, Dale (2015)
                     variable_links:
-                        volume:           volume_solid
-                        redox_FeIII_H2S*: redox_FeHR_H2S*
-                        FeIIIOx*: FeHR*
-
-                redox_FeMR_H2S:
-                    class: ReactionRedoxFeIII_H2S
-
-                    parameters:
-                        R_FeIII_H2S: 3.16e-3 #  (mol m-3)^-0.5 yr-1, 0.1 M-0.5 yr-1        = 0.1*3.16e-2 (mol m-3)^-0.5 yr-1
-
-                    variable_links:
-                        volume:           volume_solid
-                        redox_FeIII_H2S*: redox_FeMR_H2S*
-                        FeIIIOx*: FeMR*    
-
-                redox_FePR_H2S:
-                    class: ReactionRedoxFeIII_H2S
-
-                    parameters:
-                        R_FeIII_H2S: 9.48e-6 #  (mol m-3)^-0.5 yr-1, 0.1 M-0.5 yr-1        = 3e-4*3.16e-2 (mol m-3)^-0.5 yr-1
-
-                    variable_links:
-                        volume:           volume_solid
-                        redox_FeIII_H2S*: redox_FePR_H2S*
-                        FeIIIOx*: FePR*
-
+                        Particle*:       FeHR*
+                        decayflux:       FeMR_sms
 
         sedimentfloor:
             reactions:
 
+        budgets:
+            reactions:
+                grid:
+                    class: ReactionUnstructuredVectorGrid
+                    parameters:
+                        ncells: external%num_columns
+            
+                column_totals:
+                    class: ReactionFluxTarget
+                    parameters:
+                        target_prefix: ""
+                        fluxlist: ["TAlk_column_sms", "DIC_column_sms"]
 
+                ############################################################################
+                # per-column net input into sediment
+                # 
+                # solid X:
+                #   fluxOceanfloor.particulateflux_X - fluxOceanBurial.flux_X
+                # solute X:
+                #   -fluxOceanfloor.soluteflux_X - fluxOceanBurial.flux_X
+                ############################################################################
+
+                budget_C:
+                    class: ReactionVectorSum
+                    parameters:
+                        vars_to_add: [
+                            "fluxOceanfloor.particulateflux_Corg1",          "-1*fluxOceanBurial.flux_Corg1", 
+                            "fluxOceanfloor.particulateflux_Corg2",          "-1*fluxOceanBurial.flux_Corg2", 
+                            "-1*DIC_column_sms",    
+                            "-1*fluxOceanfloor.soluteflux_CH4",             "-1*fluxOceanBurial.flux_CH4",
+                        ]
+                    variable_links:
+                        sum: net_input_C
+
+                budget_P:
+                    class: ReactionVectorSum
+                    parameters:
+                        vars_to_add: [
+                            # stoich factor Porg/Corg = 1/106 = 9.434e-3
+                            "9.434e-3*fluxOceanfloor.particulateflux_Corg1", "-9.434e-3*fluxOceanBurial.flux_Corg1",
+                            "9.434e-3*fluxOceanfloor.particulateflux_Corg2", "-9.434e-3*fluxOceanBurial.flux_Corg2",
+                            "-1*fluxOceanfloor.soluteflux_P",              "-1*fluxOceanBurial.flux_P",
+                        ]
+                    variable_links:
+                        sum: net_input_P
+
+                budget_Fe:
+                    class: ReactionVectorSum
+                    parameters:
+                        vars_to_add: [
+                            "fluxOceanfloor.particulateflux_FeHR",          "-1*fluxOceanBurial.flux_FeHR",
+                            "fluxOceanfloor.particulateflux_FeMR",          "-1*fluxOceanBurial.flux_FeMR",
+                            "fluxOceanfloor.particulateflux_FePR",          "-1*fluxOceanBurial.flux_FePR",
+                            "-1*fluxOceanfloor.soluteflux_FeII",            "-1*fluxOceanBurial.flux_FeII",
+                        ]
+                    variable_links:
+                        sum: net_input_Fe
+
+                budget_S:
+                    class: ReactionVectorSum
+                    parameters:
+                        vars_to_add: [
+                            "-1*fluxOceanfloor.soluteflux_H2S",            "-1*fluxOceanBurial.flux_H2S",
+                            "-1*fluxOceanfloor.soluteflux_SO4",            "-1*fluxOceanBurial.flux_SO4",
+                        ]
+                    variable_links:
+                        sum: net_input_S
+
+                budget_TAlk:
+                    class: ReactionVectorSum
+                    parameters:
+                        vars_to_add: [
+                            "-1*TAlk_column_sms", 
+                            "-2*fluxOceanfloor.soluteflux_SO4",             "-2*fluxOceanBurial.flux_SO4",
+                            "-1*fluxOceanfloor.soluteflux_P",               "-1*fluxOceanBurial.flux_P",
+                            "2*fluxOceanfloor.soluteflux_FeII",             "2*fluxOceanBurial.flux_FeII",
+                        ]
+                    variable_links:
+                        sum: net_input_TAlk
 
 ########################################################
 # Boudreau (1996) test cases with Corg, O2, SO4/H2S, P, Fe, with FeS system and pyrite, carbonate system.
@@ -411,7 +396,7 @@ sediment_Corg_O2_Fe_pyr_carb:
                     class: ReactionFluxTarget
                     parameters:
                         target_prefix: soluteflux_
-                        fluxlist: ["O2", "P", "SO4", "SmIIaqtot", "CH4", "H2", "FeIIaqtot", "DIC", "TAlk"]
+                        fluxlist: ["O2", "P", "SO4", "TH2S", "CH4", "H2", "TFeII", "DIC", "TAlk"]
                    
 
         fluxOceanBurial:       
@@ -420,7 +405,10 @@ sediment_Corg_O2_Fe_pyr_carb:
                     class: ReactionFluxTarget
                     parameters:
                         target_prefix: flux_
-                        fluxlist: ["Corg1", "Corg2", "FeHR", "FeMR", "FePR", "FeSm", "FeS2pyr"]
+                        fluxlist: [
+                            "Corg1", "Corg2", "FeHR", "FeMR", "FePR", "FeSm", "FeS2pyr",
+                            "O2", "P", "SO4", "TH2S", "CH4", "H2", "TFeII", "DIC", "TAlk", # solutes
+                        ]
                     variable_links:
                         
  
@@ -456,16 +444,16 @@ sediment_Corg_O2_Fe_pyr_carb:
                 floorstubsoluteconc: 
                     class: ReactionConst
                     parameters:
-                        constnames: ["O2_conc", "P_conc", "SO4_conc", "SmIIaqtot_conc", "CH4_conc", "H2_conc", "FeIIaqtot_conc", "DIC_conc", "TAlk_conc"]
+                        constnames: ["O2_conc", "P_conc", "SO4_conc", "TH2S_conc", "CH4_conc", "H2_conc", "TFeII_conc", "DIC_conc", "TAlk_conc"]
                     variable_attributes:
                         #                       Boudreau (1996) test cases
                         #                       Shelf/slope Rise        Rise
                         O2_conc:initial_value:   [0.250,    0.180,        0.180]  # mol m-3
                         SO4_conc:initial_value:   28756.0e-3   # concentration mol m-3 ~ 28e-3 mol/kg * 1027 kg m-3
-                        SmIIaqtot_conc:initial_value:   0.0  # mol m-3
+                        TH2S_conc:initial_value:   0.0  # mol m-3
                         CH4_conc:initial_value:   0.0  # mol m-3
                         H2_conc:initial_value:   0.0  # mol m-3
-                        FeIIaqtot_conc:initial_value:   0.0  # mol m-3
+                        TFeII_conc:initial_value:   0.0  # mol m-3
                         P_conc:initial_value:   0.001  # mol m-3
                         DIC_conc:initial_value:  2.0  # (mol m-3) 2000 uM
                         TAlk_conc:initial_value:  2.2 # (mol m-3) 2200 uM
@@ -477,9 +465,6 @@ sediment_Corg_O2_Fe_pyr_carb:
                         input_fluxes:         fluxOceanfloor.particulateflux_$fluxname$
                         output_fluxes:        sediment.oceanfloor.$fluxname$_sms
                     variable_links:           
-
-        ocean:  # dummy Domain to suppress error from fluxOceanfloor
-            
 
         sediment:
             reactions:
@@ -494,208 +479,84 @@ sediment_Corg_O2_Fe_pyr_carb:
                         f_grid:                         quadratic
                         grid_eta:                       0.075
                         zdbl:                           0.04e-2  # diffusive boundary layer at sediment-water interface
+                        w_solute:                       true # advect solutes
 
-                reservoir_O2:
-                    class: ReactionReservoirTotal            
-                    variable_links:
-                        R*:                             O2*
-                        volume:                         volume_solute
-                    variable_attributes:
-                        R_conc:vphase:                  VP_Solute                    
-                        R:initial_value:                0.0  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
-                        R:norm_value:                   200e-3                        
-                        R_conc:diffusivity_speciesname: O2
+                ################################################################################
+                # Solute reservoirs
+                #################################################################################
 
-                reservoir_SO4:
-                    class: ReactionReservoirTotal            
-                    variable_links:
-                        R*:                             SO4*
-                        volume:                         volume_solute
-                    variable_attributes:
-                        R_conc:vphase:                  VP_Solute                    
-                        R:initial_value:                0.0  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
-                        R:norm_value:                   20000e-3                        
-                        R_conc:diffusivity_speciesname: SO4
+                reservoir_O2: {class: ReactionReservoirTotal, variable_links: {R*: O2*, volume: volume_solute}, 
+                    variable_attributes: {R_conc%diffusivity_speciesname: O2, R_conc%vphase: VP_Solute, R%initial_value: 1e-12, R%norm_value: 200e-3 }}
 
-                reservoir_SmIIaqtot:
-                    class: ReactionReservoirTotal            
-                    variable_links:
-                        R*:                             SmIIaqtot*
-                        volume:                         volume_solute
-                    variable_attributes:
-                        R_conc:vphase:                  VP_Solute                    
-                        R:initial_value:                1e-30  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
-                        R:norm_value:                   200e-3                        
-                        R_conc:diffusivity_speciesname: H2S 
+                reservoir_SO4: {class: ReactionReservoirTotal, variable_links: {R*: SO4*, volume: volume_solute}, 
+                    variable_attributes: {R_conc%diffusivity_speciesname: SO4, R_conc%vphase: VP_Solute, R%initial_value: 1e-12, R%norm_value: 10.0 }}
 
-                reservoir_CH4:
-                    class: ReactionReservoirTotal            
-                    variable_links:
-                        R*:                             CH4*
-                        volume:                         volume_solute
-                    variable_attributes:
-                        R_conc:vphase:                  VP_Solute                    
-                        R:initial_value:                0.0  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
-                        R:norm_value:                   200e-3                        
-                        R_conc:diffusivity_speciesname: CH4
+                reservoir_TH2S: {class: ReactionReservoirTotal, variable_links: {R*: TH2S*, volume: volume_solute}, 
+                    variable_attributes: {R_conc%diffusivity_speciesname: H2S, R_conc%vphase: VP_Solute, R%initial_value: 1e-12, R%norm_value: 1.0 }}
 
-                reservoir_H2:
-                    class: ReactionReservoirTotal
-                    parameters:
-                       
-                    variable_links:
-                        R*: H2*
-                        volume:                         volume_solute
-                    variable_attributes:
-                        R_conc:vphase:                  VP_Solute          
-                        R:initial_value:       1e-6   # concentration mol m-3 ~ 1e-9 mol/kg * 1027 kg m-3
-                        # R:initial_delta:       0.0
-                        R:norm_value:          1.0e-3 # for scaling only
-                        R_conc:diffusivity_speciesname: H2
+                reservoir_CH4: {class: ReactionReservoirTotal, variable_links: {R*: CH4*, volume: volume_solute}, 
+                    variable_attributes: {R_conc%diffusivity_speciesname: CH4, R_conc%vphase: VP_Solute, R%initial_value: 1e-12, R%norm_value: 1e0 }}
 
-                reservoir_P:
-                    class: ReactionReservoirTotal            
-                    variable_links:
-                        R*:                             P*
-                        volume:                         volume_solute
-                    variable_attributes:
-                        R_conc:vphase:                  VP_Solute                    
-                        R:initial_value:                0.0  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
-                        R:norm_value:                   2e-3                        
-                        R_conc:diffusivity_speciesname: PO4
+                reservoir_H2: {class: ReactionReservoirTotal, variable_links: {R*: H2*, volume: volume_solute}, 
+                    variable_attributes: {R_conc%diffusivity_speciesname: H2, R_conc%vphase: VP_Solute, R%initial_value: 1e-12, R%norm_value: 1e-3 }}
 
-                reservoir_DIC:
-                    class: ReactionReservoirTotal
-                    parameters:
-                        field_data: external%CIsotope
-                    variable_links:
-                        R*:                             DIC*
-                        volume:                         volume_solute
-                    variable_attributes:
-                        R_conc:vphase:                  VP_Solute                    
-                        R:initial_value:                1e-30  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
-                        R:norm_value:                   1000e-3                        
-                        R_conc:diffusivity_speciesname: HCO3 # use for molecular diffusivity HCO3- as the major species
+                reservoir_P: {class: ReactionReservoirTotal, variable_links: {R*: P*, volume: volume_solute}, 
+                    variable_attributes: {R_conc%diffusivity_speciesname: HPO4, R_conc%vphase: VP_Solute, R%initial_value: 1e-12, R%norm_value: 1e0 }}
 
-                reservoir_TAlk:
-                    class: ReactionReservoirTotal                    
-                    variable_links:
-                        R*:                             TAlk*
-                        volume:                         volume_solute
-                    variable_attributes:
-                        R_conc:vphase:                  VP_Solute                    
-                        R:initial_value:                1e-30  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
-                        R:norm_value:                   1000e-3                        
-                        R_conc:diffusivity_speciesname: Na # TODO - use major cations for molecular diffusivity
+                reservoir_DIC: {class: ReactionReservoirTotal, variable_links: {R*: DIC*, volume: volume_solute}, parameters: {field_data: external%CIsotope},
+                    variable_attributes: {R_conc%diffusivity_speciesname: HCO3, R_conc%vphase: VP_Solute, R%initial_value: 2000e-6, R%norm_value: 1e0 }}
+                
+                reservoir_TAlk: {class: ReactionReservoirTotal, variable_links: {R*: TAlk*, volume: volume_solute},
+                    variable_attributes: {R_conc%diffusivity_speciesname: HCO3, R_conc%vphase: VP_Solute, R%initial_value: 2200e-6, R%norm_value: 1e0 }}
 
-                reservoir_FeIIaqtot:
-                    class: ReactionReservoirTotal            
-                    variable_links:
-                        R*:                             FeIIaqtot*
-                        volume:                         volume_solute
-                    variable_attributes:
-                        R_conc:vphase:                  VP_Solute                    
-                        R:initial_value:                0.0  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
-                        R:norm_value:                   2e-3                        
-                        R_conc:diffusivity_speciesname: Fe
+                reservoir_TFeII: {class: ReactionReservoirTotal, variable_links: {R*: TFeII*, volume: volume_solute}, 
+                    variable_attributes: {R_conc%diffusivity_speciesname: Fe, R_conc%vphase: VP_Solute, R%initial_value: 1e-12, R%norm_value: 1e0 }}
+                
+                # constant concentration only, modern value
+                reservoir_B: {class: ReactionReservoirConst, variable_links: {R*: B*},
+                    variable_attributes: {R_conc%initial_value: 0.427}}
 
-                reservoir_Corg1:
-                    class: ReactionReservoirTotal            
-                    variable_links:
-                        R*:                             Corg1*
-                        volume:                         volume_solid
-                    variable_attributes:
-                        R_conc:vphase:                  VP_Solid                        
-                        R:initial_value:                0.0  # concentration m-3 solid phase
-                                                             #  mol m-3              =  g cm-3            / (g mol-1) * m^3 cm-3
-                        R:norm_value:                   2083.3  # mol m-3 solid for 1% TOC  =  2.5  * (1 wt%/100) / 12 * 1e6
+                # constant concentration only, modern value
+                reservoir_Ca: {class: ReactionReservoirConst, variable_links: {R*: Ca*},
+                    variable_attributes: {R_conc%initial_value: 10.56}}
 
-                reservoir_Corg2:
-                    class: ReactionReservoirTotal            
-                    variable_links:
-                        R*:                             Corg2*
-                        volume:                         volume_solid
-                    variable_attributes:
-                        R_conc:vphase:                  VP_Solid                        
-                        R:initial_value:                0.0  # concentration m-3 solid phase
-                                                             #  mol m-3              =  g cm-3            / (g mol-1) * m^3 cm-3
-                        R:norm_value:                   2083.3  # mol m-3 solid for 1% TOC  =  2.5  * (1 wt%/100) / 12 * 1e6
+                # constant concentration only, modern value
+                reservoir_F: {class: ReactionReservoirConst, variable_links: {R*: F*},
+                    variable_attributes: {R_conc%initial_value: 70.17e-3}}
 
-                reservoir_FeHR:
-                    class: ReactionReservoirTotal            
-                    variable_links:
-                        R*:                             FeHR*
-                        volume:                         volume_solid
-                    variable_attributes:
-                        R_conc:vphase:                  VP_Solid                        
-                        R:initial_value:                0.0  # concentration m-3 solid phase
-                                                             #  mol m-3              =  g cm-3            / (g mol-1) * m^3 cm-3
-                        R:norm_value:                   1.0  # mol m-3 solid
+                ###########################################################################
+                # Solid phase reservoirs
+                #########################################################################
 
-                reservoir_FeMR:
-                    class: ReactionReservoirTotal            
-                    variable_links:
-                        R*:                             FeMR*
-                        volume:                         volume_solid
-                    variable_attributes:
-                        R_conc:vphase:                  VP_Solid                        
-                        R:initial_value:                0.0  # concentration m-3 solid phase
-                                                             #  mol m-3              =  g cm-3            / (g mol-1) * m^3 cm-3
-                        R:norm_value:                   1.0  # mol m-3 solid
+                # Particulate organic matter
+                #                   mol m-3                              =  g cm-3            / (g mol-1) * m^3 cm-3
+                #   concentration = 2083.3  mol (m3 solid)-1 for 1% TOC  =  2.5  * (1 wt%/100) / 12 * 1e6
+                reservoir_Corg1: {class: ReactionReservoirTotal, variable_links: {R*: Corg1*, volume: volume_solid},
+                    variable_attributes: {R_conc%vphase: VP_Solid, R%initial_value: 1e-12, R%norm_value: 1.0}}
 
-                reservoir_FePR:
-                    class: ReactionReservoirTotal            
-                    variable_links:
-                        R*:                             FePR*
-                        volume:                         volume_solid
-                    variable_attributes:
-                        R_conc:vphase:                  VP_Solid                        
-                        R:initial_value:                0.0  # concentration m-3 solid phase
-                                                             #  mol m-3              =  g cm-3            / (g mol-1) * m^3 cm-3
-                        R:norm_value:                   1.0  # mol m-3 solid
+                reservoir_Corg2: {class: ReactionReservoirTotal, variable_links: {R*: Corg2*, volume: volume_solid},
+                    variable_attributes: {R_conc%vphase: VP_Solid, R%initial_value: 1e-12, R%norm_value: 1.0}}
 
-                reservoir_FeSm:
-                    class: ReactionReservoirTotal
-                    
-                    variable_links:
-                        R*: FeSm*
-                        volume:                         volume_solid
-                    variable_attributes:
-                        R_conc:vphase:                  VP_Solid                          
-                        R:initial_value:       1e-9   # concentration mol m-3 ~ 1e-9 mol/kg * 1027 kg m-3                      
-                        R:norm_value:          1.0e-3 # for scaling only                        
+                # ~ Fe(OH)3 (an FeIII oxide)
+                reservoir_FeHR: {class: ReactionReservoirTotal, variable_links: {R*: FeHR*, volume: volume_solid},
+                    variable_attributes: {R_conc%vphase: VP_Solid, R%initial_value: 1e-12, R%norm_value: 1.0}}
 
-                reservoir_FeS2pyr:
-                    class: ReactionReservoirTotal
-                    
-                    variable_links:
-                        R*: FeS2pyr*
-                        volume:                         volume_solid
-                    variable_attributes:
-                        R_conc:vphase:                  VP_Solid          
-                        R:initial_value:       1e-30   # concentration mol m-3 ~ 1e-9 mol/kg * 1027 kg m-3                      
-                        R:norm_value:          1.0e-3 # for scaling only
+                reservoir_FeMR: {class: ReactionReservoirTotal, variable_links: {R*: FeMR*, volume: volume_solid},
+                    variable_attributes: {R_conc%vphase: VP_Solid, R%initial_value: 1e-12, R%norm_value: 1.0}}
 
-                reservoir_Ca:
-                    class: ReactionReservoirConst
-                    variable_links:
-                        R*: Ca* 
-                    variable_attributes:
-                        R_conc:initial_value: 10.56   # mol m-3  10.56 mM modern Ca concentration
+                reservoir_FePR: {class: ReactionReservoirTotal, variable_links: {R*: FePR*, volume: volume_solid},
+                    variable_attributes: {R_conc%vphase: VP_Solid, R%initial_value: 1e-12, R%norm_value: 1.0}}
 
-                reservoir_B:
-                    class: ReactionReservoirConst
-                    variable_links:
-                        R*: B* 
-                    variable_attributes:
-                        R_conc:initial_value: 0.427   # mol m-3  0.427 mM modern B concentration
+                reservoir_FeSm: {class: ReactionReservoirTotal, variable_links: {R*: FeSm*, volume: volume_solid},
+                    variable_attributes: {R_conc%vphase: VP_Solid, R%initial_value: 1e-12, R%norm_value: 1.0}}
 
-                reservoir_F:
-                    class: ReactionReservoirConst
-                    variable_links:
-                        R*: F* 
-                    variable_attributes:
-                        R_conc:initial_value: 70.17e-3   # mol m-3  70.17 uM modern F concentration
+                reservoir_FeS2pyr: {class: ReactionReservoirTotal, variable_links: {R*: FeS2pyr*, volume: volume_solid},
+                    variable_attributes: {R_conc%vphase: VP_Solid, R%initial_value: 1e-12, R%norm_value: 1.0}}
+
+               
+                #########################################################
+                # Equilibrium chemistry
+                #########################################################
 
                 # [H+] primary species (as pHfree) for TAlk total
                 # Contributions to alkalinity should be added to TAlk_calc
@@ -739,13 +600,47 @@ sediment_Corg_O2_Fe_pyr_carb:
                 #     variable_attributes:
                 #         R_conc:initial_value: 1e-5   # mol m-3  10^-8.0 *1e3  [H+] at pH 8.0
 
-                FeSaq:
-                    class: ReactionFeSaq
-                    parameters:
-                        add_TAlk_calc: true  # add S-II and FeII contributions to TAlk_calc
-                    variable_links:
-                        volume: volume_solute
-                        Hp_conc: H_conc  # defined by carbonate chemistry solver
+                # HS primary species and corresponding algebraic constraint on THS2
+                HS_primary_species: {class: ReactionConstraintReservoir, 
+                    parameters: {
+                        primary_total_stoich: 1.0, # add to TH2S
+                        primary_variable: concentration, 
+                        constraint_variable: concentration, 
+                        primary_other_components: ["TAlk_calc"], # TAlk_calc +1 HS
+                    },
+                    variable_links: {R*: TH2S*, volume: volume_solute, Primary*: HS, primary_volume: volume_solute},
+                    variable_attributes: { Primary_conc%initial_value: 1.0, Primary_conc%norm_value: 1e0, R_constraint_conc%initial_value: 1e0, R_constraint_conc%norm_value: 1e0,    
+                    }}
+
+                # FeII primary species and corresponding algebraic constraint on TFeII
+                FeII_primary_species: {class: ReactionConstraintReservoir, 
+                    parameters: {
+                        primary_total_stoich: 1.0, # add to TFeII
+                        primary_variable: concentration,
+                        constraint_variable: concentration,
+                    },
+                    variable_links: {R*: TFeII*, volume: volume_solute, Primary*: FeII, primary_volume: volume_solute},
+                    variable_attributes: { Primary_conc%initial_value: 1.0, Primary_conc%norm_value: 1e0, R_constraint_conc%initial_value: 1e0, R_constraint_conc%norm_value: 1e0,    
+                    }}
+
+                # constant FeII activity coefficient
+                agamma_FeII: {class: ReactionReservoirConst, variable_links: {R_conc: FeII_agamma},
+                    variable_attributes: {R_conc%initial_value: 0.23}}
+
+                # H2S_conc  NB: K_eqb 1.814e-7 (mol kg-1), so set K_density_power: 1.0
+                H2S_species:  {class: ReactionAqEqb,  parameters: {K_density_power: 1.0,
+                    K_eqb: 1.814e-7, Reactants: ["H2S_conc"],               Products: [ "HS_conc", "H_conc"],
+                    N_components: ["TH2S_calc"]},                                                                   variable_links: {volume: volume_solute}}
+
+                # FeSaq_conc      FeSaq + H+ <--> Fe++ + HS- eqb    K_eqb = K2_FeSaq = 10.0^2.2  = 1.58e2 (unitless)
+                # NB very small correction to TAlk_calc: each FeSaq removes 1 Fe2++ (hence reduces "actual" TAlk = cations - anions by 2, equivalent to increase TAlk_calc by 2)
+                FeSaq_species:  {class: ReactionAqEqb,  parameters: {
+                    K_eqb: 1.58e2,  Reactants: ["FeSaq_conc", "H_conc"],    Products: [ "FeII_conc", "FeII_agamma", "HS_conc"], 
+                    N_components: ["TH2S_calc", "TFeII_calc", "2*TAlk_calc"] },                                     variable_links: {volume: volume_solute}}
+
+                ###################################################################################
+                # POC remineralization 
+                ################################################################################
 
                 pocdecay1:
                     class: ReactionParticleDecay
@@ -773,15 +668,6 @@ sediment_Corg_O2_Fe_pyr_carb:
                         outputflux_stoich: [1.0, 0.0, 0.009434]   # no N to make it easy to check TAlk budget
                     variable_links:
                         inputflux:  POC_decay
-
-                FeHRdecay:
-                    class: ReactionParticleDecay
-                    parameters:
-                        decay_timescale:     0.7  # yr, Dale (2015)
-                    variable_links:
-                        Particle*:       FeHR*
-                        decayflux:       FeMR_sms
-
                    
                 reminsed:
                     class: ReactionReminO2_Fe_SO4_CH4
@@ -793,156 +679,164 @@ sediment_Corg_O2_Fe_pyr_carb:
 
 
                     variable_links:
-                        FeIIIOx_conc:      FeHR_conc
-                        soluteflux_*:   "*_sms"
-                        soluteflux_H2S: SmIIaqtot_sms
-                        soluteflux_FeII:   FeIIaqtot_sms
+                        FeIIIOx_conc:       FeHR_conc
+                        soluteflux_*:       "*_sms"
+                        soluteflux_H2S:     TH2S_sms
+                        soluteflux_FeII:    TFeII_sms
                         soluteflux_FeIIIOx: FeHR_sms
 
-                redox_H2S_O2:
-                    class: ReactionRedoxH2S_O2
+                #######################################
+                # Secondary redox
+                ###########################################
 
-                    parameters:           
-                        R_H2S_O2: 3e5 # Boudreau (1997)
-                        # R_H2S_O2: 3.65e4 # 3.65e3 # (mol m-3) yr-1
-                        # R_H2S_O2: 7e3 # slow > 1e6 iters rate for numerical efficiency (mol m-3) yr-1
-                        # R_H2S_O2: 3.65e3 # fast reduce rate for numerical efficiency (mol m-3) yr-1
-                        # R_H2S_O2: 1.8e3 # fast reduce rate for numerical efficiency (mol m-3) yr-1
+                # O2 + 0.5 H2S -> 0.5 SO4-- + H+,         K (mol m-3)-1 = 3e8*1e-3 # Boudreau (1997)
+                redox_H2S_O2:   {class: ReactionAqKinetic, parameters: {
+                    K: 3e5,         Reactants: ["O2", "0.5*TH2S"],           Products: ["0.5*SO4", "-1*TAlk"]},         variable_links: {volume: volume_solute}}
 
-                    variable_links:
-                        volume:                         volume_solute
-                        H2S_conc:  H2Stot_conc
-                        H2S_sms: SmIIaqtot_sms
+                # O2 + 0.5 CH4 -> 0.5 DIC (CO2) + H2O,  K (mol m-3)-1 = 1e7 = 1e10*1e-3, Boudreau (1997)
+                redox_CH4_O2:   {class: ReactionAqKinetic, parameters: {
+                    K: 1e7,         Reactants:  ["O2", "0.5*CH4"],          Products: ["0.5*DIC"],},                    variable_links: {volume: volume_solute}}
 
-                redox_CH4_O2:
-                    class: ReactionRedoxCH4_O2
+                # SO4-- + CH4 + 2 H+ -> DIC + H2S + 2H2O, K (mol m-3)-1 = 1e4*1e-3 
+                redox_CH4_SO4:  {class: ReactionAqKinetic, parameters: {
+                    K: 1e1,         Reactants:  ["CH4", "SO4"],             Products: ["DIC", "TH2S", "2*TAlk"]},       variable_links: {volume: volume_solute}}
 
-                    parameters:                 
-                        # R_CH4_O2: 1e4 # reduce rate for numerical stability 
-                        R_CH4_O2: 1e7 # (mol m-3) yr-1 (1e10 mol/l yr-1) Boudreau (1997)
-                    variable_links:
-                        volume:                         volume_solute
+                # Fe++ + 1/4 O2 + H2O -> FeIIIOx + 2 H+, aerobic oxidation of FeII, K = 5e5 # (mol m-3)-1 yr-1, 5e8 M-1 yr-1 Dale (2015)
+                redox_FeII_O2:  {class: ReactionAqKinetic, parameters: {
+                    K: 5e5,         Reactants: ["TFeII", "0.25*O2"],        Products: ["FeHR", "-2*TAlk"]},             variable_links: {volume: volume_solute}}
 
-                redox_CH4_SO4:
-                    class: ReactionRedoxCH4_SO4
+                # 1/8 H2S + FeHR + 7/4 H+ -> Fe++ + 1/8 SO4-- + H2O,  K = 100 M-0.5 yr-1        = 100*3.16e-2 (mol m-3)^-0.5 yr-1
+                redox_FeHR_H2S: {class: ReactionAqKinetic, parameters: {
+                    K: 3.16e0,      Reactants: ["FeHR", "0.125*TH2S"],      Products: ["TFeII", "0.125*SO4", "1.75*TAlk"],
+                                    Reactant_concs: ["FeHR_conc", "TH2S_conc"], Rate_functions:  ["linear", "sqrt"]},   variable_links: {volume: volume_solid}}
 
-                    parameters:                 
-                        R_CH4_SO4: 10.0 # (mol m-3) yr-1
+                # 1/8 H2S + FeMR + 7/4 H+ -> Fe++ + 1/8 SO4-- + H2O,  K = 0.1 M-0.5 yr-1        = 0.1*3.16e-2 (mol m-3)^-0.5 yr-1
+                redox_FeMR_H2S: {class: ReactionAqKinetic, parameters: {
+                    K: 3.16e-3,     Reactants: ["FeMR", "0.125*TH2S"],      Products: ["TFeII", "0.125*SO4", "1.75*TAlk"],
+                                    Reactant_concs: ["FeMR_conc", "TH2S_conc"], Rate_functions:  ["linear", "sqrt"]},   variable_links: {volume: volume_solid}}
 
-                    variable_links:
-                        volume:                         volume_solute
-                        H2S_sms: SmIIaqtot_sms
+                # 1/8 H2S + FePR + 7/4 H+ -> Fe++ + 1/8 SO4-- + H2O,  K = 3e-4 M-0.5 yr-1        = 3e-4*3.16e-2 (mol m-3)^-0.5 yr-1
+                redox_FePR_H2S: {class: ReactionAqKinetic, parameters: {
+                    K: 9.48e-6,     Reactants: ["FePR", "0.125*TH2S"],      Products: ["TFeII", "0.125*SO4", "1.75*TAlk"],        
+                                    Reactant_concs: ["FePR_conc", "TH2S_conc"], Rate_functions:  ["linear", "sqrt"]},   variable_links: {volume: volume_solid}}
+  
+                # FeS + 2 O2 -> Fe++ + SO4--        K (mol m-3)-1 = 1e2 = 1e5 (M-1 yr-1)*1e-3 
+                redox_FeS_O2:   {class: ReactionAqKinetic, parameters: {
+                    K: 1e2,         Reactants: ["2*O2", "FeSm"],            Products: ["TFeII", "SO4"]},                variable_links: {volume: volume_solid}}
 
-                redox_H2_O2:
-                    class: ReactionRedoxH2_O2
-
-                    parameters:                 
-                        R_H2_O2: 1e6 # (mol m-3)-1 yr-1 (1e6 M-1 yr-1 = 1e6*1e-3 (mol m-3)-1 yr-1, Dale (2015). NB: arbitrary, just need to scavenge H2 produced during pyrite formation)
-                    variable_links:
-                        volume:                         volume_solute
-
-                redox_H2_SO4:
-                    class: ReactionRedoxH2_SO4
-
-                    parameters:                 
-                        R_H2_SO4: 1e6 # (mol m-3)-1 yr-1 (1e6 M-1 yr-1 = 1e6*1e-3 (mol m-3)-1 yr-1, Dale (2015). NB: arbitrary, just need to scavenge H2 produced during pyrite formation)
-
-                    variable_links:
-                        volume:                         volume_solute
-                        H2S_sms: SmIIaqtot_sms
-
-                redox_FeII_O2:
-                    class: ReactionRedoxFeII_O2
-
-                    parameters:                     
-                        R_FeII_O2: 5e5 # (mol m-3)-1 yr-1,  5e8 M-1 yr-1 = 5e8*1e-3 (mol m-3)-1 yr-1, Dale (2015)
-
-                    variable_links:
-                        volume:                         volume_solute
-                        FeII_sms: FeIIaqtot_sms
-                        FeIIIOx*: FeHR*
+                # FeS2pyr + 2 O2 -> Fe++ + 2* SO4--     K (mol m-3)-1 = 1e0 = 1e3 (M-1 yr-1)*1e-3 
+                redox_FeS2pyr_O2: {class: ReactionAqKinetic, parameters: {
+                    K: 1e0,         Reactants: ["3.5*O2", "FeS2pyr"],       Products: ["TFeII", "2*SO4", "-2*TAlk"]},   variable_links: {volume: volume_solid}}
+                            
+                # H2 + 0.5 O2 -> H2O, K = 1e6 # (mol m-3)-1 yr-1 = 1e9 M-1 yr-1 *1e-3 NB: arbitrary rate, just need to scavenge H2 produced during pyrite formation)
+                redox_H2_O2:    {class: ReactionAqKinetic, parameters: {
+                    K: 1e6,         Reactants:  ["H2", "0.5*O2"],           Products: []},                              variable_links: {volume: volume_solute}}
+                
+                # H2 + 0.25 SO4 + 0.5 H+ -> 0.25 H2S + H2O, K = 1e6 # (mol m-3)-1 yr-1 = 1e9 M-1 yr-1 *1e-3 NB: arbitrary rate, just need to scavenge H2 produced during pyrite formation)
+                redox_H2_SO4:   {class: ReactionAqKinetic, parameters: {
+                    K: 1e6,         Reactants:  ["H2", "0.25*SO4"],         Products: ["0.25*TH2S", "0.5*TAlk"]},       variable_links: {volume: volume_solute}}
 
 
-                redox_FeHR_H2S:
-                    class: ReactionRedoxFeIII_H2S
+                ###########################################
+                # Mineral formation / dissolution
+                ###########################################
 
+                FeHRdecay:
+                    class: ReactionParticleDecay
                     parameters:
-                        R_FeIII_H2S: 3.16 #  (mol m-3)^-0.5 yr-1, 100 M-0.5 yr-1        = 100*3.16e-2 (mol m-3)^-0.5 yr-1
-
+                        decay_timescale:     0.7  # yr, Dale (2015)
                     variable_links:
-                        volume:                         volume_solid
-                        redox_FeIII_H2S*: redox_FeHR_H2S*
-                        FeIIIOx*: FeHR*
-                        FeII_sms: FeIIaqtot_sms
-                        H2S_conc:  H2Stot_conc
-                        H2S_sms: SmIIaqtot_sms
+                        Particle*:       FeHR*
+                        decayflux:       FeMR_sms
 
-                redox_FeMR_H2S:
-                    class: ReactionRedoxFeIII_H2S
+                # FeSm Omega   K0_FeSm = 10.0^-5.7 mol l-1 = 1e3 * 10.0^-5.7 = 1.995e-3 mol m-3
+                Omega_FeSaq:    {class: ReactionAqEqb,  parameters: {K_eqb: 1.995e-3,   Reactants: ["Omega_FeSaq"], Products: ["FeSaq_conc"], N_components: [] }}
+                # FeSm cf Zhao (2020) R17, this is a different implementation similar to Van Cappellen & Wang (1996)
+                # K_precip: 40.0 # mol m-3 yr-1  rate of FeS precipitation (van Cappellen & Wang value 1.5e-5 mol g yr-1 ~ 1.5-5 * 2.5e6 ~ 37.5 for rho = 2.5e6 g m-3)
+                # K_dissol: 1e-3  # yr-1  rate of FeS dissolution (van Cappellen & Wang)
+                # FeSm_precipdissol: {class: ReactionAqPrecipDissol, parameters: {K_precip: 40.0, K_dissol: 1e3, dissol_rolloff_conc: 1e-9, Reactants: ["TH2S", "TFeII"],  Products: ["FeSm", "-2*TAlk"]}, variable_links: {Omega: Omega_FeSaq, volume: volume_solid}}
+                FeSm_precipdissol: {class: ReactionAqPrecipDissol, parameters: {K_precip: 40.0, K_dissol: 1e3, dissol_rolloff_conc: 0.0, Reactants: ["TH2S", "TFeII"],  Products: ["FeSm", "-2*TAlk"]}, variable_links: {Omega: Omega_FeSaq, volume: volume_solid}}
 
-                    parameters:
-                        R_FeIII_H2S: 3.16e-3 #  (mol m-3)^-0.5 yr-1, 0.1 M-0.5 yr-1        = 0.1*3.16e-2 (mol m-3)^-0.5 yr-1
-
-                    variable_links:
-                        volume:                         volume_solid
-                        redox_FeIII_H2S*: redox_FeMR_H2S*
-                        FeIIIOx*: FeMR*
-                        FeII_sms: FeIIaqtot_sms
-                        H2S_conc:  H2Stot_conc
-                        H2S_sms: SmIIaqtot_sms
-
-                redox_FePR_H2S:
-                    class: ReactionRedoxFeIII_H2S
-
-                    parameters:
-                        R_FeIII_H2S: 9.48e-6 #  (mol m-3)^-0.5 yr-1, 0.1 M-0.5 yr-1        = 3e-4*3.16e-2 (mol m-3)^-0.5 yr-1
-
-                    variable_links:
-                        volume:                         volume_solid
-                        redox_FeIII_H2S*: redox_FePR_H2S*
-                        FeIIIOx*: FePR*
-                        FeII_sms: FeIIaqtot_sms
-                        H2S_conc:  H2Stot_conc
-                        H2S_sms: SmIIaqtot_sms
-
-                redox_FeS_O2:
-                    class: ReactionRedoxFeS_O2
-
-                    parameters:
-                        R_FeS_O2:  1e2    # (mol m-3)-1 yr-1,  1e5 M-1 yr-1 = 1e5*1e-3 
-
-                    variable_links:
-                        volume:                         volume_solid
-                        FeS_*:    FeSm_*
-                        FeII_sms: FeIIaqtot_sms
-
-                redox_FeS2pyr_O2:
-                    class: ReactionRedoxFeS2pyr_O2
-
-                    parameters:
-                        R_FeS2pyr_O2:  1.0    # (mol m-3)-1 yr-1,  1e3 M-1 yr-1 = 1e3*1e-3 
-
-                    variable_links:
-                        volume:                         volume_solid
-                        FeII_sms: FeIIaqtot_sms
-
-                FeSm:
-                    class: ReactionFeSm
-
-                    parameters:
-                        rate_FeS_prec: 40.0 # mol m-3 yr-1  rate of FeS precipitation (van Cappellen & Wang value 1.5e-5 mol g yr-1 ~ 1.5-5 * 2.5e6 ~ 37.5 for rho = 2.5e6 g m-3)
-                        rate_FeS_diss: 1e3  # yr-1  rate of FeS dissolution
-
-                PyrH2S:
-                    class: ReactionPyrH2S
-
-                    parameters:
-                        R_Pyr_H2S:  1e2  # (mol m-3) yr-1, 1e5 M yr-1 = 1e5*1e-3 (mol m-3) yr-1, Dale (2015)
-                    variable_links:
-                        volume:                         volume_solid
-                        H2Ssp_conc:  H2Stot_conc  # Dale (2015) write this for total [H2S] = [H2S] + [HS-], not H2S species
-
+                # Pyrite  FeSm + H2S -> FeS2pyr + H2, K = 1e5 M yr-1 = 1e5*1e-3 (mol m-3) yr-1, Dale (2015) (NB: written as [TH2S], not [H2S])
+                pyrite_H2S: {class: ReactionAqKinetic, parameters: {K: 1e2,         Reactants: ["FeSm", "TH2S"],      Products: ["FeS2pyr", "H2"]},              variable_links: {volume: volume_solid}}
 
         sedimentfloor:
             reactions:
 
+        budgets:
+            reactions:
+                grid:
+                    class: ReactionUnstructuredVectorGrid
+                    parameters:
+                        ncells: external%num_columns
+
+                ############################################################################
+                # per-column net input into sediment
+                # 
+                # solid X:
+                #   fluxOceanfloor.particulateflux_X - fluxOceanBurial.flux_X
+                # solute X:
+                #   -fluxOceanfloor.soluteflux_X - fluxOceanBurial.flux_X
+                ############################################################################
+
+                budget_C:
+                    class: ReactionVectorSum
+                    parameters:
+                        vars_to_add: [
+                            "fluxOceanfloor.particulateflux_Corg1",         "-1*fluxOceanBurial.flux_Corg1",
+                            "fluxOceanfloor.particulateflux_Corg2",         "-1*fluxOceanBurial.flux_Corg2", 
+                            "-1*fluxOceanfloor.soluteflux_DIC",             "-1*fluxOceanBurial.flux_DIC",    
+                            "-1*fluxOceanfloor.soluteflux_CH4",             "-1*fluxOceanBurial.flux_CH4",
+                        ]
+                    variable_links:
+                        sum: net_input_C
+
+                budget_P:
+                    class: ReactionVectorSum
+                    parameters:
+                        vars_to_add: [
+                            # stoich factor Porg/Corg = 1/106 = 9.434e-3
+                            "9.434e-3*fluxOceanfloor.particulateflux_Corg1", "-9.434e-3*fluxOceanBurial.flux_Corg1",
+                            "9.434e-3*fluxOceanfloor.particulateflux_Corg2", "-9.434e-3*fluxOceanBurial.flux_Corg2",
+                            "-1*fluxOceanfloor.soluteflux_P",              "-1*fluxOceanBurial.flux_P",
+                        ]
+                    variable_links:
+                        sum: net_input_P
+                
+                budget_Fe:
+                    class: ReactionVectorSum
+                    parameters:
+                        vars_to_add: [
+                            "fluxOceanfloor.particulateflux_FeHR",          "-1*fluxOceanBurial.flux_FeHR",
+                            "fluxOceanfloor.particulateflux_FeMR",          "-1*fluxOceanBurial.flux_FeMR",
+                            "fluxOceanfloor.particulateflux_FePR",          "-1*fluxOceanBurial.flux_FePR",
+                            "fluxOceanfloor.particulateflux_FeSm",          "-1*fluxOceanBurial.flux_FeSm",
+                            "fluxOceanfloor.particulateflux_FeS2pyr",       "-1*fluxOceanBurial.flux_FeS2pyr",
+                            "-1*fluxOceanfloor.soluteflux_TFeII",           "-1*fluxOceanBurial.flux_TFeII",
+                        ]
+                    variable_links:
+                        sum: net_input_Fe
+
+                budget_S:
+                    class: ReactionVectorSum
+                    parameters:
+                        vars_to_add: [
+                            "fluxOceanfloor.particulateflux_FeSm",          "-1*fluxOceanBurial.flux_FeSm",
+                            "2*fluxOceanfloor.particulateflux_FeS2pyr",     "-2*fluxOceanBurial.flux_FeS2pyr",
+                            "-1*fluxOceanfloor.soluteflux_TH2S",            "-1*fluxOceanBurial.flux_TH2S",
+                            "-1*fluxOceanfloor.soluteflux_SO4",            "-1*fluxOceanBurial.flux_SO4",
+                        ]
+                    variable_links:
+                        sum: net_input_S
+
+                budget_TAlk:
+                    class: ReactionVectorSum
+                    parameters:
+                        vars_to_add: [
+                            "-1*fluxOceanfloor.soluteflux_TAlk",            "-1*fluxOceanBurial.flux_TAlk",
+                            "-2*fluxOceanfloor.soluteflux_SO4",             "-2*fluxOceanBurial.flux_SO4",
+                            "-1*fluxOceanfloor.soluteflux_P",               "-1*fluxOceanBurial.flux_P",
+                            "2*fluxOceanfloor.soluteflux_TFeII",            "2*fluxOceanBurial.flux_TFeII",
+                        ]
+                    variable_links:
+                        sum: net_input_TAlk

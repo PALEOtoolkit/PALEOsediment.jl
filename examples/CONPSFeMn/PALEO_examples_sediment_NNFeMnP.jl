@@ -15,10 +15,11 @@ global_logger(ConsoleLogger(stderr,Logging.Info))
 include("config_sediment_expts.jl")
 include("../plot_sediment.jl")
 include("../SumColumns_dev.jl")
+include("CFA.jl")
 
 model = PB.create_model_from_config(
-    joinpath(@__DIR__, "PALEO_examples_sediment_NNFeMn_cfg.yaml"), 
-    "sediment_Corg_O2NNMnFeS",
+    joinpath(@__DIR__, "PALEO_examples_sediment_NNFeMnP_cfg.yaml"), 
+    "sediment_Corg_O2NNMnFeSP",
 )
 
 #############################
@@ -118,7 +119,7 @@ plot_Corg_O2(run.output; Corgs=["Corg",], colT=[first(tspan), last(tspan)], colr
 plot_Corg_RCmultiG(run.output; colrange, pager)
 plot_solutes(run.output; colT=[first(tspan), last(tspan)], solutes=["TP", "DIC", "NO3", "NO2", "TNH3", "SO4", "TH2S", "CH4", "H2", "MnII", "FeII"], colrange, pager)
 plot_solids(run.output; colT=[first(tspan), last(tspan)], solids=["MnHR", "MnMR", "FeHR", "FeMR", "FePR", "S0", "FeSm", "FeS2pyr",], colrange, pager)
-plot_budget(run.output; name="P", solids=["Corg"], stoich_factors=Dict("Corg"=>1/106), solutes=["TP"], solute_burial_flux,
+plot_budget(run.output; name="P", solids=["Corg", "PFeHR", "PFeMR", "CFA"], stoich_factors=Dict("Corg"=>1/106), solutes=["TP"], solute_burial_flux,
     pager, colrange, concxscale=:log10, concxlims=(1e-3, 1e3))
 plot_budget(run.output; name="Mn", solids=["MnHR", "MnMR"], solutes=["MnII"], solute_burial_flux,
     pager, colrange, concxscale=:log10, concxlims=(1e-3, 1e3))
@@ -136,7 +137,8 @@ plot_budgets(
 )
 pager(:newpage)
 
-plot_conc_summary(run.output; species=["O2", "NO3", "NO2", "TNH3", "TP", "TH2S", "FeII", "MnII", "CH4"], pager, colrange, xscale=:log10, xlims=(1e-3, 1e0))
+plot_conc_summary(run.output; species=["O2", "NO3", "NO2", "TNH3", "TP", "TH2S", "FeII", "MnII", "CH4", "F"], pager, colrange, xscale=:log10, xlims=(1e-3, 1e0))
+plot_conc_summary(run.output; species=["Corg", "FeHR", "FeMR", "FePR", "FeSm", "FeS2pyr", "PFeHR", "PFeMR", "CFA"], pager, colrange, xscale=:log10, xlims=(1e-3, 1e4))
 
 pager(:newpage)
 
