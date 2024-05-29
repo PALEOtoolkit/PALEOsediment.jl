@@ -87,7 +87,7 @@ function do_CFAsimple(m::PB.ReactionMethod, pars, (vars, ), cellrange::PB.Abstra
 
     for i in cellrange.indices
         # mol yr-1       =  yr-1       mol m-3                                                      m^3
-        vars.rate_CFA[i] = R_CFA*max(0.0, vars.P_conc[i] - Peq_conc)*fKmin(vars.F_conc[i], KF_conc)*pars.vars.volume[i]
+        vars.rate_CFA[i] = R_CFA*max(0.0, vars.P_conc[i] - Peq_conc)*fKmin(vars.F_conc[i], KF_conc)*vars.volume[i]
     end
    
     return nothing
