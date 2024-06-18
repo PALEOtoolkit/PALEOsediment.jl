@@ -37,13 +37,13 @@ tspan=(0.0, 1e6)
 
 initial_state, modeldata = PALEOmodel.initialize!(model)
 
-run = PALEOmodel.Run(model=model, output = PALEOmodel.OutputWriters.OutputMemory())
+paleorun = PALEOmodel.Run(model=model, output = PALEOmodel.OutputWriters.OutputMemory())
 
 # PTC, Newton, no line search
 # Bounds and max step size for Newton solve. NB some tracers start at zero so set newton_max_ratio=Inf
 newton_min, newton_max, newton_min_ratio, newton_max_ratio = 1e-80, Inf, 0.1, Inf 
 PALEOmodel.SteadyState.steadystate_ptcForwardDiff(
-    run, initial_state, modeldata, tspan, 1e-3,
+    paleorun, initial_state, modeldata, tspan, 1e-3,
     deltat_fac=2.0,
     solvekwargs=(
         ftol=1e-7,
@@ -73,17 +73,17 @@ pager = PALEOmodel.PlotPager((1,3), (legend_background_color=nothing, margin=(5,
 colrange=1:3
 
 plot_budgets(
-    run.output;
+    paleorun.output;
     budgets="budgets.net_input_".*["C", "P", "S", "Fe", "TAlk"],
     ylims=(-1e-6, 1e-6),
     pager, colrange,
 )
 pager(:newpage)
 
-plot_Corg_O2(run.output; Corgs=["Corg1", "Corg2"], colT=[first(tspan), last(tspan)], colrange, pager)
-plot_solutes(run.output; colT=[first(tspan), last(tspan)], solutes=["P", "SO4", "H2S", "CH4", "FeII"], colrange, pager)
-plot_solids(run.output; colT=[first(tspan), last(tspan)], solids=["FeHR", "FeMR", "FePR"], colrange, pager)
-plot_rates(run.output; colT=[first(tspan), last(tspan)], remin_rates=["reminOrgOxO2", "reminOrgOxFeIIIOx", "reminOrgOxSO4", "reminOrgOxCH4"], colrange, pager)
+plot_Corg_O2(paleorun.output; Corgs=["Corg1", "Corg2"], colT=[first(tspan), last(tspan)], colrange, pager)
+plot_solutes(paleorun.output; colT=[first(tspan), last(tspan)], solutes=["P", "SO4", "H2S", "CH4", "FeII"], colrange, pager)
+plot_solids(paleorun.output; colT=[first(tspan), last(tspan)], solids=["FeHR", "FeMR", "FePR"], colrange, pager)
+plot_rates(paleorun.output; colT=[first(tspan), last(tspan)], remin_rates=["reminOrgOxO2", "reminOrgOxFeIIIOx", "reminOrgOxSO4", "reminOrgOxCH4"], colrange, pager)
 
 pager(:newpage)
 

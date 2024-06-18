@@ -45,11 +45,11 @@ Three sediment column example as `PALEO_examples_sediment.jl`, with carbonate ch
 
 NB: POC includes C, P only (no N) to simplify TAlk conservation check (where `soluteflux_TAlk = 2*soluteflux_H2S`)
 
-    julia> PALEOmodel.get_array(run.output, "fluxOceanfloor.soluteflux_TAlk", (cell=1, tmodel=1e12)).values
+    julia> PALEOmodel.get_array(paleorun.output, "fluxOceanfloor.soluteflux_TAlk", (cell=1, tmodel=1e12)).values
     0.014436958064622729
 
-    julia> PALEOmodel.get_array(run.output, "fluxOceanfloor.soluteflux_H2S", (cell=1, tmodel=1e12)).values
+    julia> PALEOmodel.get_array(paleorun.output, "fluxOceanfloor.soluteflux_H2S", (cell=1, tmodel=1e12)).values
     0.007218479032309767
 
-    julia> PALEOmodel.get_array(run.output, "fluxOceanfloor.soluteflux_SO4", (cell=1, tmodel=1e12)).values
+    julia> PALEOmodel.get_array(paleorun.output, "fluxOceanfloor.soluteflux_SO4", (cell=1, tmodel=1e12)).values
     -0.0072184790322306815

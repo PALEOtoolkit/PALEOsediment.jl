@@ -69,14 +69,14 @@ tspan=(0.0, 1e5)
 
 initial_state, modeldata = PALEOmodel.initialize!(model)
 
-run = PALEOmodel.Run(model=model, output = PALEOmodel.OutputWriters.OutputMemory())
+paleorun = PALEOmodel.Run(model=model, output = PALEOmodel.OutputWriters.OutputMemory())
 
 # PTC, Newton, no line search
 # Bounds and max step size for Newton solve. NB requires min/max ratio for robustness so check all tracers initial_value is not zero
 # newton_min, newton_max, newton_min_ratio, newton_max_ratio = 1e-80, 1e6, 0.1, 10.0
 newton_min, newton_max, newton_min_ratio, newton_max_ratio = 1e-30, 1e6, 1e-2, 1e2
 PALEOmodel.SteadyState.steadystate_ptcForwardDiff(
-    run, initial_state, modeldata, tspan, 1e-6,
+    paleorun, initial_state, modeldata, tspan, 1e-6,
     deltat_fac=2.0,
     solvekwargs=(
         # ftol=1e-7,
@@ -106,40 +106,40 @@ solute_burial_flux=true
 if verbose_plots    
     pager = PALEOmodel.PlotPager((1, 4), (legend_background_color=nothing, margin=(5, :mm)))
 
-    plot_phi(run.output; colrange, pager)
-    plot_w(run.output; colrange, pager)
-    plot_biorates(run.output; colrange, pager)
-    plot_Corg_O2(run.output; Corgs=["Corg",], colT=[first(tspan), last(tspan)], colrange, pager)
-    plot_Corg_RCmultiG(run.output; Corg_indices=1:12, colrange, pager)
-    plot_solutes(run.output; colT=[first(tspan), last(tspan)], solutes=["TP", "DIC", "TAlk",  "NO3", "TNH3", "SO4", "TH2S", "CH4",  "H2", "MnII",], colrange, pager)
-    # plot_sediment_FeS_summary(run.output; colrange, pager)
-    plot_solids(run.output; colT=[first(tspan), last(tspan)], solids=["MnHR", "MnMR", "FeHR", "FeMR", "FePR", "FeSm", "FeS2pyr",], colrange, pager)
-    plot_carbchem(run.output; include_constraint_error=true, colT=last(tspan), colrange, pager)
-    plot_budget(run.output; name="C", solids=["Corg", "CaCO3calc", "CaCO3arag", "MnCO3rhod"], solutes=["DIC", "CH4"], solute_burial_flux,
+    plot_phi(paleorun.output; colrange, pager)
+    plot_w(paleorun.output; colrange, pager)
+    plot_biorates(paleorun.output; colrange, pager)
+    plot_Corg_O2(paleorun.output; Corgs=["Corg",], colT=[first(tspan), last(tspan)], colrange, pager)
+    plot_Corg_RCmultiG(paleorun.output; Corg_indices=1:12, colrange, pager)
+    plot_solutes(paleorun.output; colT=[first(tspan), last(tspan)], solutes=["TP", "DIC", "TAlk",  "NO3", "TNH3", "SO4", "TH2S", "CH4",  "H2", "MnII",], colrange, pager)
+    # plot_sediment_FeS_summary(paleorun.output; colrange, pager)
+    plot_solids(paleorun.output; colT=[first(tspan), last(tspan)], solids=["MnHR", "MnMR", "FeHR", "FeMR", "FePR", "FeSm", "FeS2pyr",], colrange, pager)
+    plot_carbchem(paleorun.output; include_constraint_error=true, colT=last(tspan), colrange, pager)
+    plot_budget(paleorun.output; name="C", solids=["Corg", "CaCO3calc", "CaCO3arag", "MnCO3rhod"], solutes=["DIC", "CH4"], solute_burial_flux,
         pager, colrange, fluxylims=(-4, 4), concxscale=:log10, concxlims=(1e-3, 1e4))
-    plot_budget(run.output; name="TP", solids=["Corg", "PFeHR", "PFeMR", "CFA"], stoich_factors=Dict("Corg"=>1/106), solutes=["TP"], solute_burial_flux,
+    plot_budget(paleorun.output; name="TP", solids=["Corg", "PFeHR", "PFeMR", "CFA"], stoich_factors=Dict("Corg"=>1/106), solutes=["TP"], solute_burial_flux,
         pager, colrange, concxscale=:log10, concxlims=(1e-3, 1e3))
-    plot_budget(run.output; name="Mn", solids=["MnHR", "MnMR", "MnCO3rhod"], solutes=["MnII"], solute_burial_flux,
+    plot_budget(paleorun.output; name="Mn", solids=["MnHR", "MnMR", "MnCO3rhod"], solutes=["MnII"], solute_burial_flux,
         pager, colrange, concxscale=:log10, concxlims=(1e-3, 1e4))
     # don't include solute_burial_flux as FeIItot is already counted once as a solid
-    plot_budget(run.output; name="Fe", solids=["FeHR", "FeMR", "FePR", "FeMag", "FeSm", "FeS2pyr", "FeIItot"], solutes=["FeIItot"], extras=["budgets.Biotite_dissolflux"], solute_burial_flux=false,
+    plot_budget(paleorun.output; name="Fe", solids=["FeHR", "FeMR", "FePR", "FeMag", "FeSm", "FeS2pyr", "FeIItot"], solutes=["FeIItot"], extras=["budgets.Biotite_dissolflux"], solute_burial_flux=false,
         stoich_factors=Dict("FeMag"=>3, "budgets.Biotite_dissolflux"=>2),
         pager, colrange, concxscale=:log10, concxlims=(1e-3, 1e4))
-    plot_budget(run.output; name="S", solids=["FeSm", "FeS2pyr", "S0"], solutes=["TH2S", "SO4"], solute_burial_flux,
+    plot_budget(paleorun.output; name="S", solids=["FeSm", "FeS2pyr", "S0"], solutes=["TH2S", "SO4"], solute_burial_flux,
         stoich_factors=Dict("FeS2pyr"=>2,),
         pager, colrange, concxscale=:log10, concxlims=(1e-3, 1e4), fluxylims=(-1, 1) )
     # TODO TAlk conservation requires counting adsorbed FeII that is buried ?!
-    plot_budget(run.output; name="TAlk", solids=["FeIItot"], solutes=["TAlk", "SO4", "NO3", "TNH3", "TP", "MnII", "FeIItot", "Ca", "Mg", "K", "Na", "F"], solute_burial_flux,
+    plot_budget(paleorun.output; name="TAlk", solids=["FeIItot"], solutes=["TAlk", "SO4", "NO3", "TNH3", "TP", "MnII", "FeIItot", "Ca", "Mg", "K", "Na", "F"], solute_burial_flux,
         stoich_factors=Dict("SO4"=>2, "NO3"=>1, "TNH3"=>-1, "TP"=>1, "MnII"=>-2, "FeIItot"=>-2, "Ca"=>-2, "Mg"=>-2, "K"=>-1), 
         pager, colrange, concxscale=:identity, concxlims=(-Inf, Inf), fluxylims=(-10, 10) )
-    plot_rates(run.output; colT=[first(tspan), last(tspan)], plot_freminOrgTot=false, remin_rates=["reminOrgOxO2", "reminOrgOxNO3", "reminOrgOxSO4", "reminOrgOxCH4"], colrange, pager)
-    plot_conc_summary(run.output; species=["DIC", "O2", "TP", "SO4", "TH2S", "CH4"], pager, colrange, xscale=:log10, xlims=(1e-3, 1e2))
+    plot_rates(paleorun.output; colT=[first(tspan), last(tspan)], plot_freminOrgTot=false, remin_rates=["reminOrgOxO2", "reminOrgOxNO3", "reminOrgOxSO4", "reminOrgOxCH4"], colrange, pager)
+    plot_conc_summary(paleorun.output; species=["DIC", "O2", "TP", "SO4", "TH2S", "CH4"], pager, colrange, xscale=:log10, xlims=(1e-3, 1e2))
 end
 
 # summary plots
 pager = PALEOmodel.PlotPager((2, 4), (legend_background_color=nothing, margin=(5, :mm)))
 plot_budgets(
-    run.output;
+    paleorun.output;
     budgets="budgets.net_input_".*["C", "N", "P", "S", "Mn", "Fe", "TAlk"],
     ylims=(-1e-6, 1e-6),
     pager, colrange,
@@ -147,7 +147,7 @@ plot_budgets(
 pager(:newpage)
 
 plot_summary_stacked(
-    run.output; 
+    paleorun.output; 
     species=["MnII", "FeII", "SO4", "CH4", "FeMag", "TNH3", "Ca", "DIC", "TP", "F", "CFA", "O2", "NO3", "TH2S", "TAlk",],
     others=["NotOmega_CFA",],
     pager, colrange
