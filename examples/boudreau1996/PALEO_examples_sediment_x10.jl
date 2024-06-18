@@ -51,13 +51,13 @@ tspan=(0.0, 10000.0)
 
 initial_state, modeldata = PALEOmodel.initialize!(model)
 
-run = PALEOmodel.Run(model=model, output = PALEOmodel.OutputWriters.OutputMemory())
+paleorun = PALEOmodel.Run(model=model, output = PALEOmodel.OutputWriters.OutputMemory())
 
 # PTC, Newton, no line search
 # Bounds and max step size for Newton solve. NB some tracers start at zero so set newton_max_ratio=Inf
 newton_min, newton_max, newton_min_ratio, newton_max_ratio = 1e-80, Inf, 0.1, Inf 
 PALEOmodel.SteadyState.steadystate_ptcForwardDiff(
-    run, initial_state, modeldata, tspan, 1e-3,
+    paleorun, initial_state, modeldata, tspan, 1e-3,
     deltat_fac=2.0,
     solvekwargs=(
         ftol=1e-7,
@@ -85,25 +85,25 @@ gr(size=(1500, 900))
 pager = PALEOmodel.PlotPager((2,5), (legend_background_color=nothing, margin=(5, :mm)))
 
 colrange=1:10 # number of columns
-plot_Corg_O2(run.output; Corgs=["Corg1", "Corg2"], colT=[first(tspan), last(tspan)], colrange, pager=pager)
-plot_solutes(run.output; colT=[first(tspan), last(tspan)], colrange, pager=pager)
-plot_rates(run.output; colT=[first(tspan), last(tspan)], colrange, pager=pager)
+plot_Corg_O2(paleorun.output; Corgs=["Corg1", "Corg2"], colT=[first(tspan), last(tspan)], colrange, pager=pager)
+plot_solutes(paleorun.output; colT=[first(tspan), last(tspan)], colrange, pager=pager)
+plot_rates(paleorun.output; colT=[first(tspan), last(tspan)], colrange, pager=pager)
 
 pager(:newpage)
 
 
 # summary plots of solute fluxes vs O2_conc
-O2_conc = [PALEOmodel.get_array(run.output, "oceanfloor.O2_conc", (tmodel=1e12, cell=i)).values for i in 1:10]
-SO4_conc = [PALEOmodel.get_array(run.output, "oceanfloor.SO4_conc", (tmodel=1e12, cell=i)).values for i in 1:10]
-soluteflux_O2 = [PALEOmodel.get_array(run.output, "fluxOceanfloor.soluteflux_O2", (tmodel=1e12, cell=i)).values for i in 1:10]
-soluteflux_H2S = [PALEOmodel.get_array(run.output, "fluxOceanfloor.soluteflux_H2S", (tmodel=1e12, cell=i)).values for i in 1:10]
-soluteflux_CH4 = [PALEOmodel.get_array(run.output, "fluxOceanfloor.soluteflux_CH4", (tmodel=1e12, cell=i)).values for i in 1:10]
+O2_conc = [PALEOmodel.get_array(paleorun.output, "oceanfloor.O2_conc", (tmodel=1e12, cell=i)).values for i in 1:10]
+SO4_conc = [PALEOmodel.get_array(paleorun.output, "oceanfloor.SO4_conc", (tmodel=1e12, cell=i)).values for i in 1:10]
+soluteflux_O2 = [PALEOmodel.get_array(paleorun.output, "fluxOceanfloor.soluteflux_O2", (tmodel=1e12, cell=i)).values for i in 1:10]
+soluteflux_H2S = [PALEOmodel.get_array(paleorun.output, "fluxOceanfloor.soluteflux_H2S", (tmodel=1e12, cell=i)).values for i in 1:10]
+soluteflux_CH4 = [PALEOmodel.get_array(paleorun.output, "fluxOceanfloor.soluteflux_CH4", (tmodel=1e12, cell=i)).values for i in 1:10]
 
-reminOrgOxO2_total = [sum(PALEOmodel.get_array(run.output, "sediment.reminOrgOxO2", (tmodel=1e12, column=i)).values) for i in 1:10]
-reminOrgOxSO4_total = [sum(PALEOmodel.get_array(run.output, "sediment.reminOrgOxSO4", (tmodel=1e12, column=i)).values) for i in 1:10]
-reminOrgOxCH4_total = [sum(PALEOmodel.get_array(run.output, "sediment.reminOrgOxCH4", (tmodel=1e12, column=i)).values) for i in 1:10]
+reminOrgOxO2_total = [sum(PALEOmodel.get_array(paleorun.output, "sediment.reminOrgOxO2", (tmodel=1e12, column=i)).values) for i in 1:10]
+reminOrgOxSO4_total = [sum(PALEOmodel.get_array(paleorun.output, "sediment.reminOrgOxSO4", (tmodel=1e12, column=i)).values) for i in 1:10]
+reminOrgOxCH4_total = [sum(PALEOmodel.get_array(paleorun.output, "sediment.reminOrgOxCH4", (tmodel=1e12, column=i)).values) for i in 1:10]
 
-redox_H2S_O2_total = [sum(PALEOmodel.get_array(run.output, "sediment.redox_H2S_O2", (tmodel=1e12, column=i)).values) for i in 1:10]
+redox_H2S_O2_total = [sum(PALEOmodel.get_array(paleorun.output, "sediment.redox_H2S_O2", (tmodel=1e12, column=i)).values) for i in 1:10]
 
 gr(size=(800, 600))
 pager = PALEOmodel.PlotPager((2,2), (legend_background_color=nothing, margin=(5, :mm)))

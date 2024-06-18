@@ -44,14 +44,14 @@ tspan=(0.0, 1e6)
 
 initial_state, modeldata = PALEOmodel.initialize!(model)
 
-run = PALEOmodel.Run(model=model, output = PALEOmodel.OutputWriters.OutputMemory())
+paleorun = PALEOmodel.Run(model=model, output = PALEOmodel.OutputWriters.OutputMemory())
 
 # PTC, Newton, no line search
 # Bounds and max step size for Newton solve. NB requires min/max ratio for robustness so check all tracers initial_value is not zero
 # newton_min, newton_max, newton_min_ratio, newton_max_ratio = 1e-80, 1e6, 0.1, 10.0
 newton_min, newton_max, newton_min_ratio, newton_max_ratio = 1e-30, 1e6, 1e-2, 1e2
 PALEOmodel.SteadyState.steadystate_ptcForwardDiff(
-    run, initial_state, modeldata, tspan, 1e-6,
+    paleorun, initial_state, modeldata, tspan, 1e-6,
     deltat_fac=2.0,
     solvekwargs=(
         ftol=1e-7,
@@ -83,19 +83,19 @@ gr(size=(1200, 800))
 pager = PALEOmodel.PlotPager((1, 4), (legend_background_color=nothing, margin=(5, :mm)))
 
 solute_burial_flux=true
-plot_phi(run.output; colrange, pager)
-plot_w(run.output; colrange, pager)
-plot_biorates(run.output; colrange, pager)
-plot_Corg_O2(run.output; Corgs=["Corg",], colT=[first(tspan), last(tspan)], colrange, pager)
-plot_Corg_RCmultiG(run.output; Corg_indices=1:12, colrange, pager)
-plot_solutes(run.output; colT=[first(tspan), last(tspan)], solutes=["P", "DIC", "TAlk",  "SO4", "H2S", "CH4", ], colrange, pager)
-plot_budget(run.output; name="C", solids=["Corg", ], solutes=["DIC", "CH4"], solute_burial_flux, pager, colrange, fluxylims=(-4, 4), concxscale=:log10, concxlims=(1e-3, 1e4))
-plot_budget(run.output; name="P", solids=["Corg"], stoich_factors=Dict("Corg"=>1/106), solutes=["P"], solute_burial_flux, pager, colrange, concxscale=:log10, concxlims=(1e-3, 1e3))
-plot_budget(run.output; name="S", solids=[], solutes=["H2S", "SO4"], solute_burial_flux, pager, colrange, concxscale=:log10, concxlims=(1e-3, 1e4), fluxylims=(-1, 1) )
-plot_rates(run.output; colT=[first(tspan), last(tspan)], plot_freminOrgTot=false, remin_rates=["reminOrgOxO2", "reminOrgOxSO4", "reminOrgOxCH4"], colrange, pager)
-plot_conc_summary(run.output; species=["DIC", "O2", "P", "SO4", "H2S", "CH4"], pager, colrange, xscale=:log10, xlims=(1e-3, 1e2))
+plot_phi(paleorun.output; colrange, pager)
+plot_w(paleorun.output; colrange, pager)
+plot_biorates(paleorun.output; colrange, pager)
+plot_Corg_O2(paleorun.output; Corgs=["Corg",], colT=[first(tspan), last(tspan)], colrange, pager)
+plot_Corg_RCmultiG(paleorun.output; Corg_indices=1:12, colrange, pager)
+plot_solutes(paleorun.output; colT=[first(tspan), last(tspan)], solutes=["P", "DIC", "TAlk",  "SO4", "H2S", "CH4", ], colrange, pager)
+plot_budget(paleorun.output; name="C", solids=["Corg", ], solutes=["DIC", "CH4"], solute_burial_flux, pager, colrange, fluxylims=(-4, 4), concxscale=:log10, concxlims=(1e-3, 1e4))
+plot_budget(paleorun.output; name="P", solids=["Corg"], stoich_factors=Dict("Corg"=>1/106), solutes=["P"], solute_burial_flux, pager, colrange, concxscale=:log10, concxlims=(1e-3, 1e3))
+plot_budget(paleorun.output; name="S", solids=[], solutes=["H2S", "SO4"], solute_burial_flux, pager, colrange, concxscale=:log10, concxlims=(1e-3, 1e4), fluxylims=(-1, 1) )
+plot_rates(paleorun.output; colT=[first(tspan), last(tspan)], plot_freminOrgTot=false, remin_rates=["reminOrgOxO2", "reminOrgOxSO4", "reminOrgOxCH4"], colrange, pager)
+plot_conc_summary(paleorun.output; species=["DIC", "O2", "P", "SO4", "H2S", "CH4"], pager, colrange, xscale=:log10, xlims=(1e-3, 1e2))
 pager = PALEOmodel.PlotPager((2, 4), (legend_background_color=nothing, margin=(5, :mm)))
-plot_summary_stacked(run.output; species=["SO4", "CH4", "DIC", "P", "O2", "H2S"], plot_pHfree=false, pager, colrange)
+plot_summary_stacked(paleorun.output; species=["SO4", "CH4", "DIC", "P", "O2", "H2S"], plot_pHfree=false, pager, colrange)
 pager(:newpage)
 
 

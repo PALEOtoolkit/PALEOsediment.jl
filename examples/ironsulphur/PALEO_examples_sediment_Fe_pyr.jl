@@ -48,14 +48,14 @@ tspan=(0.0, 100000.0)
 
 initial_state, modeldata = PALEOmodel.initialize!(model)
 
-run = PALEOmodel.Run(model=model, output = PALEOmodel.OutputWriters.OutputMemory())
+paleorun = PALEOmodel.Run(model=model, output = PALEOmodel.OutputWriters.OutputMemory())
 
 # PTC, Newton, no line search
 # Bounds and max step size for Newton solve. NB requires min/max ratio for robustness so check all tracers initial_value is not zero
 # newton_min, newton_max, newton_min_ratio, newton_max_ratio = 1e-80, 1e6, 0.1, 10.0
 newton_min, newton_max, newton_min_ratio, newton_max_ratio = 1e-30, 1e6, 1e-2, 1e2
 PALEOmodel.SteadyState.steadystate_ptcForwardDiff(
-    run, initial_state, modeldata, tspan, 1e-3,
+    paleorun, initial_state, modeldata, tspan, 1e-3,
     deltat_fac=2.0,
     solvekwargs=(
         ftol=1e-7,
@@ -85,12 +85,12 @@ PALEOmodel.SteadyState.steadystate_ptcForwardDiff(
 gr(size=(900, 600))
 pager = PALEOmodel.PlotPager((1,3), (legend_background_color=nothing, margin=(5, :mm)))
 
-plot_Corg_O2(run.output; Corgs=["Corg1", "Corg2"], colT=[first(tspan), last(tspan)], pager=pager)
-plot_solutes(run.output; colT=[first(tspan), last(tspan)], solutes=["P", "SO4", "TH2S", "CH4", "H2", "TFeII", "DIC", "TAlk"], pager=pager)
-plot_sediment_FeS_summary(run.output; FeII_species = ["TFeII", "FeII", "FeSaq",], pager=pager)
-plot_solids(run.output; colT=[first(tspan), last(tspan)], solids=["FeHR", "FeMR", "FePR", "FeSm", "FeS2pyr"], pager=pager)
-plot_rates(run.output; colT=[first(tspan), last(tspan)], remin_rates=["reminOrgOxO2", "reminOrgOxFeIIIOx", "reminOrgOxSO4", "reminOrgOxCH4"], pager=pager)
-plot_carbchem(run.output; include_constraint_error=true, colT=last(tspan), pager)
+plot_Corg_O2(paleorun.output; Corgs=["Corg1", "Corg2"], colT=[first(tspan), last(tspan)], pager=pager)
+plot_solutes(paleorun.output; colT=[first(tspan), last(tspan)], solutes=["P", "SO4", "TH2S", "CH4", "H2", "TFeII", "DIC", "TAlk"], pager=pager)
+plot_sediment_FeS_summary(paleorun.output; FeII_species = ["TFeII", "FeII", "FeSaq",], pager=pager)
+plot_solids(paleorun.output; colT=[first(tspan), last(tspan)], solids=["FeHR", "FeMR", "FePR", "FeSm", "FeS2pyr"], pager=pager)
+plot_rates(paleorun.output; colT=[first(tspan), last(tspan)], remin_rates=["reminOrgOxO2", "reminOrgOxFeIIIOx", "reminOrgOxSO4", "reminOrgOxCH4"], pager=pager)
+plot_carbchem(paleorun.output; include_constraint_error=true, colT=last(tspan), pager)
 
 pager(:newpage)
 

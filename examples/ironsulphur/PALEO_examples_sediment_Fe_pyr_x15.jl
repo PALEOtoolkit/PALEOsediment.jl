@@ -101,14 +101,14 @@ tspan=(0.0, 10000.0)
 
 initial_state, modeldata = PALEOmodel.initialize!(model)
 
-run = PALEOmodel.Run(model=model, output = PALEOmodel.OutputWriters.OutputMemory())
+paleorun = PALEOmodel.Run(model=model, output = PALEOmodel.OutputWriters.OutputMemory())
 
 # PTC, Newton, no line search
 # Bounds and max step size for Newton solve. NB requires min/max ratio for robustness so check all tracers initial_value is not zero
 # newton_min, newton_max, newton_min_ratio, newton_max_ratio = 1e-80, 1e6, 0.1, 10.0
 newton_min, newton_max, newton_min_ratio, newton_max_ratio = 1e-30, 1e6, 1e-2, 1e2
 PALEOmodel.SteadyState.steadystate_ptcForwardDiff(
-    run, initial_state, modeldata, tspan, 1e-3,
+    paleorun, initial_state, modeldata, tspan, 1e-3,
     deltat_fac=2.0,
     solvekwargs=(
         ftol=1e-3,
@@ -141,36 +141,36 @@ pager = PALEOmodel.PlotPager((3,5), (legend_background_color=nothing, margin=(5,
 colrange=1:num_columns # number of columns
 
 # check numerics: DAE constraint variables ~0
-#  plot_tracers(run.output; colT=[1.0, last(tspan)], tracers=["SmIIaqtot_constraint", "FeIIaqtot_constraint"], colrange, pager=pager)
+#  plot_tracers(paleorun.output; colT=[1.0, last(tspan)], tracers=["SmIIaqtot_constraint", "FeIIaqtot_constraint"], colrange, pager=pager)
 
-plot_Corg_O2(run.output; Corgs=["Corg1", "Corg2"], colT=[first(tspan), last(tspan)], colrange, pager)
-plot_solutes(run.output; colT=[first(tspan), last(tspan)], solutes=["P", "DIC", "TAlk", "SO4", "TH2S", "CH4", "H2", "TFeII"], colrange, pager)
-plot_sediment_FeS_summary(run.output; FeII_species = ["TFeII", "FeII", "FeSaq",], colrange, pager)
-plot_solids(run.output; colT=[first(tspan), last(tspan)], solids=["FeHR", "FeMR", "FePR", "FeSm", "FeS2pyr"], colrange, pager)
-plot_rates(run.output; colT=[first(tspan), last(tspan)], remin_rates=["reminOrgOxO2", "reminOrgOxFeIIIOx", "reminOrgOxSO4", "reminOrgOxCH4"], colrange, pager)
-plot_carbchem(run.output; include_constraint_error=true, colT=last(tspan), colrange, pager)
+plot_Corg_O2(paleorun.output; Corgs=["Corg1", "Corg2"], colT=[first(tspan), last(tspan)], colrange, pager)
+plot_solutes(paleorun.output; colT=[first(tspan), last(tspan)], solutes=["P", "DIC", "TAlk", "SO4", "TH2S", "CH4", "H2", "TFeII"], colrange, pager)
+plot_sediment_FeS_summary(paleorun.output; FeII_species = ["TFeII", "FeII", "FeSaq",], colrange, pager)
+plot_solids(paleorun.output; colT=[first(tspan), last(tspan)], solids=["FeHR", "FeMR", "FePR", "FeSm", "FeS2pyr"], colrange, pager)
+plot_rates(paleorun.output; colT=[first(tspan), last(tspan)], remin_rates=["reminOrgOxO2", "reminOrgOxFeIIIOx", "reminOrgOxSO4", "reminOrgOxCH4"], colrange, pager)
+plot_carbchem(paleorun.output; include_constraint_error=true, colT=last(tspan), colrange, pager)
 
 pager(:newpage)
 
 
 # summary plots of solute fluxes vs O2_conc
-O2_conc = [PALEOmodel.get_array(run.output, "oceanfloor.O2_conc", (tmodel=1e12, cell=i)).values for i in 1:num_columns]
-SO4_conc = [PALEOmodel.get_array(run.output, "oceanfloor.SO4_conc", (tmodel=1e12, cell=i)).values for i in 1:num_columns]
-soluteflux_O2 = [PALEOmodel.get_array(run.output, "fluxOceanfloor.soluteflux_O2", (tmodel=1e12, cell=i)).values for i in 1:num_columns]
-soluteflux_TFeII = [PALEOmodel.get_array(run.output, "fluxOceanfloor.soluteflux_TFeII", (tmodel=1e12, cell=i)).values for i in 1:num_columns]
-soluteflux_TH2S = [PALEOmodel.get_array(run.output, "fluxOceanfloor.soluteflux_TH2S", (tmodel=1e12, cell=i)).values for i in 1:num_columns]
-soluteflux_CH4 = [PALEOmodel.get_array(run.output, "fluxOceanfloor.soluteflux_CH4", (tmodel=1e12, cell=i)).values for i in 1:num_columns]
+O2_conc = [PALEOmodel.get_array(paleorun.output, "oceanfloor.O2_conc", (tmodel=1e12, cell=i)).values for i in 1:num_columns]
+SO4_conc = [PALEOmodel.get_array(paleorun.output, "oceanfloor.SO4_conc", (tmodel=1e12, cell=i)).values for i in 1:num_columns]
+soluteflux_O2 = [PALEOmodel.get_array(paleorun.output, "fluxOceanfloor.soluteflux_O2", (tmodel=1e12, cell=i)).values for i in 1:num_columns]
+soluteflux_TFeII = [PALEOmodel.get_array(paleorun.output, "fluxOceanfloor.soluteflux_TFeII", (tmodel=1e12, cell=i)).values for i in 1:num_columns]
+soluteflux_TH2S = [PALEOmodel.get_array(paleorun.output, "fluxOceanfloor.soluteflux_TH2S", (tmodel=1e12, cell=i)).values for i in 1:num_columns]
+soluteflux_CH4 = [PALEOmodel.get_array(paleorun.output, "fluxOceanfloor.soluteflux_CH4", (tmodel=1e12, cell=i)).values for i in 1:num_columns]
 
-reminOrgOxO2_total = [sum(PALEOmodel.get_array(run.output, "sediment.reminOrgOxO2", (tmodel=1e12, column=i)).values) for i in 1:num_columns]
-reminOrgOxFeIIIox_total = [sum(PALEOmodel.get_array(run.output, "sediment.reminOrgOxFeIIIOx", (tmodel=1e12, column=i)).values) for i in 1:num_columns]
-reminOrgOxSO4_total = [sum(PALEOmodel.get_array(run.output, "sediment.reminOrgOxSO4", (tmodel=1e12, column=i)).values) for i in 1:num_columns]
-reminOrgOxCH4_total = [sum(PALEOmodel.get_array(run.output, "sediment.reminOrgOxCH4", (tmodel=1e12, column=i)).values) for i in 1:num_columns]
+reminOrgOxO2_total = [sum(PALEOmodel.get_array(paleorun.output, "sediment.reminOrgOxO2", (tmodel=1e12, column=i)).values) for i in 1:num_columns]
+reminOrgOxFeIIIox_total = [sum(PALEOmodel.get_array(paleorun.output, "sediment.reminOrgOxFeIIIOx", (tmodel=1e12, column=i)).values) for i in 1:num_columns]
+reminOrgOxSO4_total = [sum(PALEOmodel.get_array(paleorun.output, "sediment.reminOrgOxSO4", (tmodel=1e12, column=i)).values) for i in 1:num_columns]
+reminOrgOxCH4_total = [sum(PALEOmodel.get_array(paleorun.output, "sediment.reminOrgOxCH4", (tmodel=1e12, column=i)).values) for i in 1:num_columns]
 
-redox_H2S_O2_total = [sum(PALEOmodel.get_array(run.output, "sediment.redox_O2_TH2S_SO4", (tmodel=1e12, column=i)).values) for i in 1:num_columns]
-redox_CH4_SO4_total = [sum(PALEOmodel.get_array(run.output, "sediment.redox_CH4_SO4_DIC_TH2S", (tmodel=1e12, column=i)).values) for i in 1:num_columns]
+redox_H2S_O2_total = [sum(PALEOmodel.get_array(paleorun.output, "sediment.redox_O2_TH2S_SO4", (tmodel=1e12, column=i)).values) for i in 1:num_columns]
+redox_CH4_SO4_total = [sum(PALEOmodel.get_array(paleorun.output, "sediment.redox_CH4_SO4_DIC_TH2S", (tmodel=1e12, column=i)).values) for i in 1:num_columns]
 
 # burial fluxes
-burial_FeS2pyr = [sum(PALEOmodel.get_array(run.output, "fluxOceanBurial.flux_FeS2pyr", (tmodel=1e12, cell=i)).values) for i in 1:num_columns]
+burial_FeS2pyr = [sum(PALEOmodel.get_array(paleorun.output, "fluxOceanBurial.flux_FeS2pyr", (tmodel=1e12, cell=i)).values) for i in 1:num_columns]
 
 
 
@@ -186,7 +186,7 @@ column_ids = [
 ]
 
 for (crange, xvar, titlesuffix, xlabel) in column_ids  
-    p = plot(title="solute fluxes, $titlesuffix", xlabel=xlabel, ylabel="flux (mol m-2 yr-1)", ylim=(-2.0, 1.0), xflip=true)
+    local p = plot(title="solute fluxes, $titlesuffix", xlabel=xlabel, ylabel="flux (mol m-2 yr-1)", ylim=(-2.0, 1.0), xflip=true)
     plot!(p, xvar[crange], soluteflux_O2[crange]; label="O2")
     plot!(p, xvar[crange], soluteflux_TFeII[crange]; label="FeII")
     plot!(p, xvar[crange], soluteflux_TH2S[crange]; label="H2S")
@@ -196,7 +196,7 @@ for (crange, xvar, titlesuffix, xlabel) in column_ids
 end
 
 for (crange, xvar, titlesuffix, xlabel) in column_ids  
-    p = plot(title="remin fluxes, $titlesuffix", xlabel=xlabel, ylabel="flux (mol O2eq m-2 yr-1)", ylim=(-2.0, 1.0), xflip=true);
+    local p = plot(title="remin fluxes, $titlesuffix", xlabel=xlabel, ylabel="flux (mol O2eq m-2 yr-1)", ylim=(-2.0, 1.0), xflip=true);
     plot!(p, xvar[crange], reminOrgOxO2_total[crange]; label="O2")
     plot!(p, xvar[crange], reminOrgOxFeIIIox_total[crange]; label="FeIII")
     plot!(p, xvar[crange], reminOrgOxSO4_total[crange]; label="SO4")
@@ -206,7 +206,7 @@ for (crange, xvar, titlesuffix, xlabel) in column_ids
 end
    
 for (crange, xvar, titlesuffix, xlabel) in column_ids   
-    p = plot(title="H2S fluxes, $titlesuffix", xlabel=xlabel, ylabel="flux (mol S m-2 yr-1)", ylim=(-1.0, 1.0), xflip=true);
+    local p = plot(title="H2S fluxes, $titlesuffix", xlabel=xlabel, ylabel="flux (mol S m-2 yr-1)", ylim=(-1.0, 1.0), xflip=true);
     plot!(p, xvar[crange], -0.5.*reminOrgOxSO4_total[crange]; label="remin SO4");
     plot!(p, xvar[crange], redox_CH4_SO4_total[crange]; label="CH4 + SO4 -> H2S");
     plot!(p, xvar[crange], -1.0.*soluteflux_TH2S[crange]; label="solute H2S");
@@ -215,7 +215,7 @@ for (crange, xvar, titlesuffix, xlabel) in column_ids
 end
 
 for (crange, xvar, titlesuffix, xlabel) in column_ids 
-    p = plot(title="x = S-II buried / SR, $titlesuffix", xlabel=xlabel, ylabel="x = S-II buried / SR", ylim=(0, 1.0), xflip=true);
+    local p = plot(title="x = S-II buried / SR, $titlesuffix", xlabel=xlabel, ylabel="x = S-II buried / SR", ylim=(0, 1.0), xflip=true);
     plot!(p,xvar[crange], (2.0.*burial_FeS2pyr[crange]) ./ (-0.5.*reminOrgOxSO4_total[crange]) ; label="x");
     pager(p)
 end

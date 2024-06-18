@@ -466,7 +466,7 @@ sediment_Corg_O2_carb:
                         R_conc:vphase:                  VP_Solute                    
                         R:initial_value:                1e-30  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
                         R:norm_value:                   1000e-3                        
-                        R_conc:diffusivity_speciesname: Na # TODO - use major cations for molecular diffusivity
+                        R_conc:diffusivity_speciesname: HCO3 # TODO
                 
 
                 reservoir_Corg1:
@@ -512,17 +512,36 @@ sediment_Corg_O2_carb:
                     variable_attributes:
                         R_conc:initial_value: 70.17e-3   # mol m-3  70.17 uM modern F concentration
 
+                # [H+] primary species (as pHfree) for algebraic constraint on TAlk
+                TAlk_constraint_H_primary_species:
+                    class: ReactionConstraintReservoir
+                    variable_links:
+                        volume: volume_solute
+                        R*: TAlk*
+                        primary_volume: volume_solute
+                        Primary_pconc: pHfree
+                        Primary_conc: H_conc                        
+                    parameters:
+                        primary_total_stoich: 0.0 # ReactionCO2SYS adds H to TAlk_calc
+                        primary_variable: p_concentration # provide pHfree as state variable to solver
+                        constraint_variable: amount # provide TAlk_constraint (mol) as algebraic constraint to solver
+                    variable_attributes: 
+                        Primary_pconc%initial_value: 8.0
+                        Primary_pconc%norm_value: 1.0
+                        Primary_conc%advect: false
+                        R_constraint%norm_value: 1.0
+
                 carbchem:
                     class: ReactionCO2SYS
                     parameters:
                         components: ["Ci", "B", "S", "F", "Omega", "H2S"]
                         defaultconcs: [] # ["TF", "TB", "Ca"]
-                        solve_pH:   constraint # H as a state variable
-                        outputs:    ["H", "CO2", "HCO3", "CO3", "OmegaCA", "OmegaAR"]
+                        solve_pH:   speciationTAlk # accumulate TAlk contributions into TAlk_calc
+                        # H_conc primary species is defined by ReactionConstraintReservoir, but is still added to TAlk by ReactionCO2SYS
+                        outputs:    ["CO2", "HCO3", "CO3", "OmegaCA", "OmegaAR"]
                         
                     variable_links:
                         volume: volume_solute
-                        H: H_conc
                         TCi_conc: DIC_conc
                         TS_conc: SO4_conc
                         TH2S_conc: H2S_conc

@@ -31,13 +31,13 @@ toutput=[0.0, 1e-1, 1e0, 1e1, 1e2, 1e3, 1e4]
 
 initial_state, modeldata = PALEOmodel.initialize!(model)
 
-run = PALEOmodel.Run(model=model, output = PALEOmodel.OutputWriters.OutputMemory())
+paleorun = PALEOmodel.Run(model=model, output = PALEOmodel.OutputWriters.OutputMemory())
 
 # PTC, Newton, no line search
 # Bounds and max step size for Newton solve. NB some tracers start at zero so set newton_max_ratio=Inf
 newton_min, newton_max, newton_min_ratio, newton_max_ratio = 1e-80, Inf, 0.1, Inf 
 PALEOmodel.SteadyState.steadystate_ptcForwardDiff(
-    run, initial_state, modeldata, tspan, 1e-3;
+    paleorun, initial_state, modeldata, tspan, 1e-3;
     deltat_fac=2.0,
     tss_output=toutput,
     solvekwargs=(
@@ -63,10 +63,10 @@ PALEOmodel.SteadyState.steadystate_ptcForwardDiff(
 
 # multiple plots per screen
 gr(size=(900, 600))
-pager = PALEOmodel.PlotPager((1,3), (legend_background_color=nothing, ))
+pager = PALEOmodel.PlotPager((1,3), (legend_background_color=nothing, margin=(5, :mm)))
 
-plot_w(run.output; pager=pager)
-plot_Corg_O2(run.output, Corgs=["Corg"]; colT=toutput, pager=pager)
+plot_w(paleorun.output; pager=pager)
+plot_Corg_O2(paleorun.output, Corgs=["Corg"]; colT=toutput, pager=pager)
 
 pager(:newpage)
 

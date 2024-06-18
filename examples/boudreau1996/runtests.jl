@@ -34,11 +34,11 @@ skipped_testsets = [
 
     tspan=(0,10000.0)
     initial_state, modeldata = PALEOmodel.initialize!(model)
-    run = PALEOmodel.Run(model=model, output = PALEOmodel.OutputWriters.OutputMemory())
+    paleorun = PALEOmodel.Run(model=model, output = PALEOmodel.OutputWriters.OutputMemory())
 
     # Newton, no(?) line search
     sol = PALEOmodel.SteadyState.steadystateForwardDiff(
-        run, initial_state, modeldata, 0.0;
+        paleorun, initial_state, modeldata, 0.0;
         solvekwargs=(
             ftol=10e-9,
             # ftol=5e-5,
@@ -53,7 +53,7 @@ skipped_testsets = [
     println("conservation checks:")
     conschecks = [ ]    
     for (domname, varname, rtol) in conschecks
-        startval, endval = PB.get_data(run.output, domname*"."*varname)[[1, end]]
+        startval, endval = PB.get_data(paleorun.output, domname*"."*varname)[[1, end]]
         println("  check $domname.$varname $startval $endval $rtol")
         @test isapprox(startval, endval, rtol=rtol)
     end
@@ -66,7 +66,7 @@ skipped_testsets = [
         ("fluxOceanfloor", "soluteflux_H2S", [0.025073, 6.8626e-5, 0.00088524],   2.5e-2),
     ]    
     for (domname, varname, checkval, rtol) in checkvals
-        outputval = PB.get_data(run.output, domname*"."*varname)[end]
+        outputval = PB.get_data(paleorun.output, domname*"."*varname)[end]
         println("  check $domname.$varname $outputval $checkval $rtol")
         @test isapprox(outputval, checkval, rtol=rtol)
     end

@@ -70,14 +70,14 @@ tspan=(0.0, 100000.0)
 
 initial_state, modeldata = PALEOmodel.initialize!(model)
 
-run = PALEOmodel.Run(model=model, output = PALEOmodel.OutputWriters.OutputMemory())
+paleorun = PALEOmodel.Run(model=model, output = PALEOmodel.OutputWriters.OutputMemory())
 
 # PTC, Newton, no line search
 # Bounds and max step size for Newton solve. NB requires min/max ratio for robustness so check all tracers initial_value is not zero
 # newton_min, newton_max, newton_min_ratio, newton_max_ratio = 1e-80, 1e6, 0.1, 10.0
 newton_min, newton_max, newton_min_ratio, newton_max_ratio = 1e-30, 1e6, 1e-2, 1e2
 PALEOmodel.SteadyState.steadystate_ptcForwardDiff(
-    run, initial_state, modeldata, tspan, 1e-6,
+    paleorun, initial_state, modeldata, tspan, 1e-6,
     deltat_fac=2.0,
     solvekwargs=(
         ftol=1e-7,
@@ -111,32 +111,32 @@ pager = PALEOmodel.PlotPager((1, 4), (legend_background_color=nothing, margin=(5
 
 solute_burial_flux=true
 
-plot_phi(run.output; colrange, pager)
-plot_w(run.output; colrange, pager)
-plot_biorates(run.output; colrange, pager)
-plot_Corg_O2(run.output; Corgs=["Corg",], colT=[first(tspan), last(tspan)], colrange, pager)
-plot_Corg_RCmultiG(run.output; colrange, pager)
-plot_solutes(run.output; colT=[first(tspan), last(tspan)], solutes=["TP", "DIC", "NO3", "NO2", "TNH3", "SO4", "TH2S", "CH4", "H2", "MnII", "FeII"], colrange, pager)
-plot_solids(run.output; colT=[first(tspan), last(tspan)], solids=["MnHR", "MnMR", "FeHR", "FeMR", "FePR", "S0", "FeSm", "FeS2pyr",], colrange, pager)
-plot_budget(run.output; name="P", solids=["Corg"], stoich_factors=Dict("Corg"=>1/106), solutes=["TP"], solute_burial_flux,
+plot_phi(paleorun.output; colrange, pager)
+plot_w(paleorun.output; colrange, pager)
+plot_biorates(paleorun.output; colrange, pager)
+plot_Corg_O2(paleorun.output; Corgs=["Corg",], colT=[first(tspan), last(tspan)], colrange, pager)
+plot_Corg_RCmultiG(paleorun.output; colrange, pager)
+plot_solutes(paleorun.output; colT=[first(tspan), last(tspan)], solutes=["TP", "DIC", "NO3", "NO2", "TNH3", "SO4", "TH2S", "CH4", "H2", "MnII", "FeII"], colrange, pager)
+plot_solids(paleorun.output; colT=[first(tspan), last(tspan)], solids=["MnHR", "MnMR", "FeHR", "FeMR", "FePR", "S0", "FeSm", "FeS2pyr",], colrange, pager)
+plot_budget(paleorun.output; name="P", solids=["Corg"], stoich_factors=Dict("Corg"=>1/106), solutes=["TP"], solute_burial_flux,
     pager, colrange, concxscale=:log10, concxlims=(1e-3, 1e3))
-plot_budget(run.output; name="Mn", solids=["MnHR", "MnMR"], solutes=["MnII"], solute_burial_flux,
+plot_budget(paleorun.output; name="Mn", solids=["MnHR", "MnMR"], solutes=["MnII"], solute_burial_flux,
     pager, colrange, concxscale=:log10, concxlims=(1e-3, 1e3))
-plot_budget(run.output; name="Fe", solids=["FeHR", "FeMR", "FePR", "FeSm", "FeS2pyr"], solutes=["FeII"], solute_burial_flux,
+plot_budget(paleorun.output; name="Fe", solids=["FeHR", "FeMR", "FePR", "FeSm", "FeS2pyr"], solutes=["FeII"], solute_burial_flux,
     pager, colrange, concxscale=:log10, concxlims=(1e-3, 1e4))
-plot_budget(run.output; name="S", solids=["S0", "FeSm", "FeS2pyr"], solutes=["TH2S", "SO4"], stoich_factors=Dict("FeS2pyr"=>2), solute_burial_flux,
+plot_budget(paleorun.output; name="S", solids=["S0", "FeSm", "FeS2pyr"], solutes=["TH2S", "SO4"], stoich_factors=Dict("FeS2pyr"=>2), solute_burial_flux,
     pager, colrange, concxscale=:log10, concxlims=(1e-3, 1e4), fluxylims=(-1, 1) )
-plot_rates(run.output; colT=[first(tspan), last(tspan)], remin_rates=["reminOrgOxO2", "reminOrgOxNO2", "reminOrgOxNO3NO2", "reminOrgOxMnIVOx", "reminOrgOxFeIIIOx", "reminOrgOxSO4", "reminOrgOxCH4"], colrange, pager)
+plot_rates(paleorun.output; colT=[first(tspan), last(tspan)], remin_rates=["reminOrgOxO2", "reminOrgOxNO2", "reminOrgOxNO3NO2", "reminOrgOxMnIVOx", "reminOrgOxFeIIIOx", "reminOrgOxSO4", "reminOrgOxCH4"], colrange, pager)
 
 plot_budgets(
-    run.output;
+    paleorun.output;
     budgets="budgets.net_input_".*["C", "N", "P", "S", "Mn", "Fe", "TAlk"],
     ylims=(-1e-6, 1e-6),
     pager, colrange,
 )
 pager(:newpage)
 
-plot_conc_summary(run.output; species=["O2", "NO3", "NO2", "TNH3", "TP", "TH2S", "FeII", "MnII", "CH4"], pager, colrange, xscale=:log10, xlims=(1e-3, 1e0))
+plot_conc_summary(paleorun.output; species=["O2", "NO3", "NO2", "TNH3", "TP", "TH2S", "FeII", "MnII", "CH4"], pager, colrange, xscale=:log10, xlims=(1e-3, 1e0))
 
 pager(:newpage)
 

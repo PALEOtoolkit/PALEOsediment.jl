@@ -38,14 +38,14 @@ tspan=(0.0, 10000.0)
 
 initial_state, modeldata = PALEOmodel.initialize!(model)
 
-run = PALEOmodel.Run(model=model, output = PALEOmodel.OutputWriters.OutputMemory())
+paleorun = PALEOmodel.Run(model=model, output = PALEOmodel.OutputWriters.OutputMemory())
 
 # PTC, Newton, no line search
 # TODO This form of Newton regularization doesn't work with isotopes !! (as isotope mol*delta state variables can be -ve)
 # Bounds and max step size for Newton solve. NB some tracers start at zero so set newton_max_ratio=Inf
 # newton_min, newton_max, newton_min_ratio, newton_max_ratio = 1e-80, Inf, 0.1, Inf 
 PALEOmodel.SteadyState.steadystate_ptcForwardDiff(
-    run, initial_state, modeldata, tspan, 1e-3,
+    paleorun, initial_state, modeldata, tspan, 1e-3,
     deltat_fac=2.0,
     solvekwargs=(
         ftol=1e-7,
@@ -71,12 +71,12 @@ PALEOmodel.SteadyState.steadystate_ptcForwardDiff(
 
 # multiple plots per screen
 gr(size=(900, 600))
-pager = PALEOmodel.PlotPager((1,3), (legend_background_color=nothing, ))
+pager = PALEOmodel.PlotPager((1,3), (legend_background_color=nothing, margin=(5, :mm)))
 
-plot_Corg_O2(run.output; Corgs=["Corg1", "Corg2"], colT=[first(tspan), last(tspan)], pager=pager)
-plot_solutes(run.output; colT=[first(tspan), last(tspan)], pager=pager)
-plot_solute_deltas(run.output; solutes=["SO4", "H2S"], colT=[first(tspan), last(tspan)], pager=pager)
-plot_rates(run.output; colT=[first(tspan), last(tspan)], pager=pager)
+plot_Corg_O2(paleorun.output; Corgs=["Corg1", "Corg2"], colT=[first(tspan), last(tspan)], pager=pager)
+plot_solutes(paleorun.output; colT=[first(tspan), last(tspan)], pager=pager)
+plot_solute_deltas(paleorun.output; solutes=["SO4", "H2S"], colT=[first(tspan), last(tspan)], pager=pager)
+plot_rates(paleorun.output; colT=[first(tspan), last(tspan)], pager=pager)
 
 pager(:newpage)
 

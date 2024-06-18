@@ -78,16 +78,16 @@ POC stoichiometry Corg, P only (no N) to simplify test of alkalinity budget, ie
 check alkalinity flux from SO4 and FeII solute fluxes = soluteflux_TAlk (as solid phase inputs and
 output make no contribution to alkalinity budget).
 
-    julia> PALEOmodel.get_array(run.output, "fluxOceanfloor.soluteflux_SmIIaqtot", (cell=1, tmodel=1e12)).values
+    julia> PALEOmodel.get_array(paleorun.output, "fluxOceanfloor.soluteflux_SmIIaqtot", (cell=1, tmodel=1e12)).values
     0.00021099944013347013
 
-    julia> PALEOmodel.get_array(run.output, "fluxOceanfloor.soluteflux_SO4", (cell=1, tmodel=1e12)).values
+    julia> PALEOmodel.get_array(paleorun.output, "fluxOceanfloor.soluteflux_SO4", (cell=1, tmodel=1e12)).values
     -0.0745449641168272  # net sulphate input balanced by FeS / FeS2 burial
 
-    julia> PALEOmodel.get_array(run.output, "fluxOceanfloor.soluteflux_FeIIaqtot", (cell=1, tmodel=1e12)).values
+    julia> PALEOmodel.get_array(paleorun.output, "fluxOceanfloor.soluteflux_FeIIaqtot", (cell=1, tmodel=1e12)).values
     0.0012053409002682764
 
-    julia> PALEOmodel.get_array(run.output, "fluxOceanfloor.soluteflux_TAlk", (cell=1, tmodel=1e12)).values
+    julia> PALEOmodel.get_array(paleorun.output, "fluxOceanfloor.soluteflux_TAlk", (cell=1, tmodel=1e12)).values
     0.15150061203704088
 
     julia> -2*-0.0745449641168272 + 2*0.0012053409002682764
