@@ -36,8 +36,8 @@ function PB.register_methods!(rj::ReactionSumColumns_dev)
     @info "ReactionSumColumns_dev.register_methods! $(PB.fullname(rj))"
 
     vars = [
-        PB.VarDep(          "X",     "",    "per-cell quantity to sum over columns"),
-        PB.VarContribColumn("X_sum", "",    "column sum of X")
+        PB.VarDep(          "X",     "unknown",    "per-cell quantity to sum over columns"),
+        PB.VarContribColumn("X_sum", "unknown",    "column sum of X")
     ]
 
     PB.add_method_do!(

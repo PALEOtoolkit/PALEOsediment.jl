@@ -509,11 +509,11 @@ function find_solute_vars(domain::PB.Domain; include_burial_flux)
 
         # default :field_data to link to any ScalarData, IsotopeData etc
         push!(vars_conc,
-            PB.VarDep(    rootname*"_conc", "", "")
+            PB.VarDep(    rootname*"_conc", "mol m-3", "")
         )
         
         push!(vars_oceanfloor_conc,
-            PB.VarDepColumn(    "oceanfloor_"*rootname*"_conc"=>"oceanfloor."*rootname*"_conc", "", "")
+            PB.VarDepColumn(    "oceanfloor_"*rootname*"_conc"=>"oceanfloor."*rootname*"_conc", "mol m-3", "")
         )
 
         push!(vars_diff,
@@ -528,10 +528,10 @@ function find_solute_vars(domain::PB.Domain; include_burial_flux)
         st_sms, st_fluxoceanfloorsolute, st_fluxoceanburial, st_mult = [], [], [], Float64[] 
         for tnm in totalnamesmults
             tmult, tname = PALEOaqchem.parse_number_name(tnm)
-            push!(st_sms, PB.VarContrib(tname*"_sms", "", ""))
-            push!(st_fluxoceanfloorsolute, PB.VarContribColumn("fluxOceanfloor_soluteflux_"*tname=>"fluxOceanfloor.soluteflux_"*tname,"", ""))
+            push!(st_sms, PB.VarContrib(tname*"_sms", "mol yr-1", ""))
+            push!(st_fluxoceanfloorsolute, PB.VarContribColumn("fluxOceanfloor_soluteflux_"*tname=>"fluxOceanfloor.soluteflux_"*tname, "mol yr-1", ""))
             if include_burial_flux
-                push!(st_fluxoceanburial, PB.VarContribColumn("fluxOceanBurial_flux_"*tname=>"fluxOceanBurial.flux_"*tname, "", ""))
+                push!(st_fluxoceanburial, PB.VarContribColumn("fluxOceanBurial_flux_"*tname=>"fluxOceanBurial.flux_"*tname, "mol yr-1", ""))
             end
             push!(st_mult, tmult)
         end
@@ -566,7 +566,7 @@ function find_solid_vars(domain::PB.Domain)
         # per-species concentration
         # default :field_data to link to any ScalarData, IsotopeData etc
         push!(vars_conc,
-            PB.VarDep(    rootname*"_conc", "", "")
+            PB.VarDep(    rootname*"_conc", "mol m-3", "")
         )
 
         # per-totalvar _sms and flux output
@@ -577,9 +577,9 @@ function find_solid_vars(domain::PB.Domain)
         st_sms, st_fluxoceanburial, st_mult = [], [], Float64[] 
         for tnm in totalnamesmults
             tmult, tname = PALEOaqchem.parse_number_name(tnm)
-            push!(st_sms, PB.VarContrib(tname*"_sms", "", ""))
+            push!(st_sms, PB.VarContrib(tname*"_sms", "mol yr-1", ""))
             push!(st_fluxoceanburial,
-                PB.VarContribColumn("fluxOceanBurial_flux_"*tname=>"fluxOceanBurial.flux_"*tname, "", "")
+                PB.VarContribColumn("fluxOceanBurial_flux_"*tname=>"fluxOceanBurial.flux_"*tname, "mol yr-1", "")
             )
             push!(st_mult, tmult)
         end
