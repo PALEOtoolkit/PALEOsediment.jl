@@ -750,7 +750,7 @@ sediment_Corg_O2_Fe_pyr_carb:
                         decayflux:       FeMR_sms
 
                 # FeSm Omega   K0_FeSm = 10.0^-5.7 mol l-1 = 1e3 * 10.0^-5.7 = 1.995e-3 mol m-3
-                Omega_FeSaq:    {class: ReactionAqEqb,  parameters: {K_eqb: 1.995e-3,   Reactants: ["Omega_FeSaq"], Products: ["FeSaq_conc"], N_components: [] }}
+                Omega_FeSaq:    {class: ReactionAqEqb,  parameters: {K_eqb: 1.995e-3,   Reactants: ["Omega_FeSaq"], Products: ["FeSaq_conc"], N_components: [] }, variable_attributes: {Omega_FeSaq%units: ""}}
                 # FeSm cf Zhao (2020) R17, this is a different implementation similar to Van Cappellen & Wang (1996)
                 # K_precip: 40.0 # mol m-3 yr-1  rate of FeS precipitation (van Cappellen & Wang value 1.5e-5 mol g yr-1 ~ 1.5-5 * 2.5e6 ~ 37.5 for rho = 2.5e6 g m-3)
                 # K_dissol: 1e-3  # yr-1  rate of FeS dissolution (van Cappellen & Wang)
