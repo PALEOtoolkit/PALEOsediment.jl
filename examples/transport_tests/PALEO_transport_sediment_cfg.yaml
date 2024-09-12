@@ -87,18 +87,31 @@ sediment_abiotic_O2:
                 
 
         sediment:
-            reactions:
-                bioratesed:
-                    class: ReactionSedimentBioRates
+            reactions:                
 
-                transportsed:
-                    class: ReactionSedimentTransport
+                gridsed:
+                    class: ReactionSedimentGridn1D
                     parameters:
                         L:                             0.15  # 0.15m column with 60 x 2.5mm bins
                         ncellspercol:                  60
+                        
+                physsed:
+                    class: ReactionSedimentPhys
+                    parameters:                        
                         f_porosity:                    ExpAtten #  Const
                         zpor:                          0.1 # (m) lengthscale for porosity
                         w_solute:                      true  # w_solute = w_solid at base of column
+
+                bioratesed:
+                    class: ReactionSedimentBioRates
+
+                transportsedsolid:
+                    class: ReactionSedimentTransportSolid
+
+                transportsedsolute:
+                    class: ReactionSedimentTransportSolute
+                    parameters:                        
+                        solute_burial_flux:                      true  # include solute burial flux terms
                        
                 reservoir_O2:
                     class: ReactionReservoirTotal
