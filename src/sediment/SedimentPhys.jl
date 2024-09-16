@@ -133,7 +133,21 @@ function do_sediment_phys(
 
             # solid advection velocity (solute advection calculated below)
             phys_vars.w_solid[i] = (-oceanfloor_vars.oceanfloor_w_accum[icol] *
-                                (1.0 - phys_vars.phi[first(colindices)]) / (1.0 - phys_vars.phi[i]))
+                                (phys_vars.phi_solid[first(colindices)]) / (phys_vars.phi_solid[i]))
+            
+            ### NEW advection equation
+           
+            # uf (m y-1) displacement velocity (distance by which the cells are displaced per unit time)
+            # of a cell at index i is equal to the added net specific mass production of all microbial species of the 
+            # biofilm matrix between the substratum and this location
+
+            # uf[i] = sum of R_sms (m3 yr-1) for index i 0-i divided by cell area A (m2)
+            # where R_sms is PB.VarTarget("volume_change_sms",  "m^3 yr-1", "change in volume due to production and consumption of solid phase components")
+            
+            # w_solid adds sediment accumulation w_accum (m y-1) of solid phases to the solid phase biological accumulation uf,i
+            # phys_vars.w_solid[i] = (-oceanfloor_vars.oceanfloor_w_accum[icol] *
+            #                   (phys_vars.phi_solid[first(colindices)]) / (phys_vars.phi_solid[i]))
+            #                   + uf[i]
 
             # tortuoisity-dependent multiplier for diffusivity
             phys_vars.Dfac[i]  = 1.0 /(1.0 - log(phys_vars.phi[i]^2))  # Boundreau (1996) formulation
