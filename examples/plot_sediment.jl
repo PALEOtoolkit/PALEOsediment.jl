@@ -71,7 +71,7 @@ function plot_w(
 )
 
     for icol in colrange
-        pager(plot(title="advection velocity $icol", output, ["sediment.w_solid", "sediment.w_solute"], (column=icol, tmodel=1e12), xlabel="w (m yr-1)", swap_xy=true))
+        pager(plot(title="advection velocity $icol", output, ["sediment.w_solid_upper", "sediment.w_solid_lower", "sediment.w_solute_upper",  "sediment.w_solute_lower"], (column=icol, tmodel=1e12), xlabel="w (m yr-1)", swap_xy=true))
     end
 
 end

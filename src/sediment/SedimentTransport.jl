@@ -80,9 +80,12 @@ end
 function PB.register_dynamic_methods!(rj::ReactionSedimentTransportSolid)
 
     phys_vars = [
-        PB.VarDep("phi_solid",                     "",         "1.0 - porosity (volume fraction of solid phase)"),
+        PB.VarDep("phi_solid",                     "",         "cell mean 1.0 - porosity (volume fraction of solid phase)"),
+        PB.VarDep("phi_solid_upper",               "",         "1.0 - porosity (volume fraction of solid phase) on cell upper face"),
+        PB.VarDep("phi_solid_lower",               "",         "1.0 - porosity (volume fraction of solid phase) on cell lower face"),
         PB.VarDep("volume_solid",                  "m^3",      "solid volume of sediment cells"),
-        PB.VarDep("w_solid",                       "m yr-1",   "solid phase advection velocity (downwards is -ve)"),
+        PB.VarDep("w_solid_upper",                 "m yr-1",   "solid phase advection velocity (downwards is -ve) at cell upper face"),
+        PB.VarDep("w_solid_lower",                 "m yr-1",   "solid phase advection velocity (downwards is -ve) at cell lower face"),
     ]
 
 
@@ -231,7 +234,7 @@ function do_sediment_transport_solid(
         )
     )        
         calc_downwards_advect_column(
-            grid_vars.Abox, phys_vars.phi_solid, phys_vars.w_solid,
+            grid_vars.Abox, phys_vars.phi_solid_upper, phys_vars.w_solid_upper, phys_vars.phi_solid_lower, phys_vars.w_solid_lower,
             solid_conc, solid_totals_multipliers, solid_smss,
             nothing, nothing, solid_fluxOceanBurials,
             icol, colindices
@@ -345,13 +348,16 @@ end
 function PB.register_dynamic_methods!(rj::ReactionSedimentTransportSolute)
 
     phys_vars = [
-        PB.VarDep("phi",                           "",         "porosity (volume fraction of solute phase)"),
+        PB.VarDep("phi",                           "",         "cell mean porosity (volume fraction of solute phase)"),
         PB.VarDep("volume_solute",                 "m^3",      "solute volume of sediment cells"),
+        PB.VarDep("phi_upper",                     "",         "cell mean porosity (volume fraction of solute phase) at cell upper face"),
+        PB.VarDep("phi_lower",                     "",         "cell mean porosity (volume fraction of solute phase) at cell lower face"),
 
         PB.VarDep("temp",                          "Kelvin",   "sediment temperature"),
         PB.VarDep("sal",                           "psu",      "sediment salinity"),
 
-        PB.VarDep("w_solute",                      "m yr-1",   "solute phase advection velocity (downwards is -ve)"),
+        PB.VarDep("w_solute_upper",                "m yr-1",   "solute phase advection velocity (downwards is -ve) at cell upper face"),
+        PB.VarDep("w_solute_lower",                "m yr-1",   "solute phase advection velocity (downwards is -ve) at cell lower face"),
         PB.VarDep("Dfac",                          "",         "tortuoisity-dependent multiplier for solute diffusivity"),
     ]
 
@@ -572,7 +578,7 @@ function do_sediment_transport_solute(
         ),
     )    
         calc_downwards_advect_column(
-            grid_vars.Abox, phys_vars.phi, phys_vars.w_solute,
+            grid_vars.Abox, phys_vars.phi_upper, phys_vars.w_solute_upper, phys_vars.phi_lower, phys_vars.w_solute_lower,
             solute_conc, solute_totals_multipliers, solute_smss,
             solute_oceanfloor_conc,  solute_fluxOceanfloors, solute_fluxOceanBurial,
             icol, colindices
@@ -585,7 +591,7 @@ function do_sediment_transport_solute(
         )
     
         calc_surface_dbl_column(
-            grid_vars.Abox, zdbl, phys_vars.phi,
+            grid_vars.Abox, zdbl, phys_vars.phi_upper,
             solute_diff, phys_vars.Dfac, solute_conc, solute_totals_multipliers, solute_smss,
             solute_oceanfloor_conc, solute_fluxOceanfloors,
             icol, colindices
@@ -722,7 +728,7 @@ If `ub_conc = nothing`, no flux into upper boundary.
 
 If `lb_fluxouts = nothing`, no flux out of lower boundary, flux accumulates in lowest cell"
 function calc_downwards_advect_column(
-    area, volfrac, w,
+    area, volfrac_upper, w_upper, volfrac_lower, w_lower,
     conc, mults, smss,
     ub_conc, ub_fluxins, lb_fluxouts,
     icol, colindices
@@ -734,17 +740,17 @@ function calc_downwards_advect_column(
         # flux (+ve) downwards into cell at top of column
         # NB: add zero(conc[iu]) to maintain type stability 
         # mol yr-1             mol m-3                 m yr-1   m^2
-        flux = zero(conc[iu]) + ub_conc[icol]*volfrac[iu]*(-w[iu])*area[iu]       
+        flux = zero(conc[iu]) + ub_conc[icol]*volfrac_upper[iu]*(-w_upper[iu])*area[iu]       
         _add_fluxes(ub_fluxins, mults, (icol, -flux)) # +ve is out of sediment
     end
     @inbounds for i in colindices
-        # add flux from above to this cell
-        w[i] <= 0.0 || error("upwards advection not supported")
+        # add flux from above to this cell        
         _add_fluxes(smss, mults, (i, flux))
 
         # flux (+ve) leaving lower boundary of cell
+        w_lower[i] <= 0.0 || error("upwards advection not supported")
         # mol yr-1             mol m-3                 m yr-1   m^2
-        flux                = conc[i] * volfrac[i] * (-w[i]) * area[i]
+        flux                = conc[i] * volfrac_lower[i] * (-w_lower[i]) * area[i]
         _add_fluxes(smss, mults, (i, -flux))
     end
 
@@ -761,7 +767,9 @@ end
 "diffusive transport in a column interior with no-flux boundary conditions
 
 colindices are column indices (top -> bottom)
-for area, zupper, zmid, volfrac, two contributions to diff, conc, smss."
+for area, zupper, zmid, volfrac, two contributions to diff, conc, smss.
+
+TODO - use phi at cell face instead of interpolating from mid-points ?"
 function calc_diffuse_column(
     area, zupper, zmid, volfrac,
     diff1, diff2, conc, mults, smss,
