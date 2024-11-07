@@ -214,6 +214,24 @@ function plot_solids(
     return nothing
 end
 
+function plot_solids_volume_frac(
+    output;
+    solids=["Corg1"],
+    colT=[-1e12, 0.1, 1.0, 10.0, 100.0, 1000.0, 1e12],
+    colrange=1:3,
+    pager=PALEOmodel.DefaultPlotPager(),
+)
+    for s in solids
+        for icol in colrange
+            pager(plot(title="[$s] $icol", output, ["sediment.$(s)_volume_frac"], (tmodel=colT, column=icol), xlabel="solid phase volume fraction", swap_xy=true))
+        end
+    end
+
+    pager(:newpage)
+
+    return nothing
+end
+
 function plot_tracers(
     output;
     tracers=["SmIIaqtot_constraint", "FeIIaqtot_constraint"],

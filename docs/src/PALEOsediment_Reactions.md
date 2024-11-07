@@ -11,4 +11,5 @@ SedimentPhys.ReactionSedimentPhys
 SedimentBioRates.ReactionSedimentBioRates
 SedimentTransport.ReactionSedimentTransportSolid
 SedimentTransport.ReactionSedimentTransportSolute
+SedimentReservoirs.ReactionSedSolidReservoir
 ```

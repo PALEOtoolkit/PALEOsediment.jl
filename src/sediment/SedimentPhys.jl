@@ -188,8 +188,8 @@ function do_sediment_w(
         for i in colindices            
             w_vars.w_solid_upper[i] = last_w_solid_upper            
             # m yr-1 =   m3 yr-1          / m^3
-            dw = w_vars.volume_change_sms[i]/phys_vars.volume_solid[i]
-            w_vars.w_solid_lower[i] = w_vars.w_solid_upper[i] + dw
+            dw = w_vars.volume_change_sms[i]/(phys_vars.phi_solid_lower[i]*grid_vars.Abox[i])
+            w_vars.w_solid_lower[i] = w_vars.w_solid_upper[i] - dw
             last_w_solid_upper = w_vars.w_solid_lower[i]
         end
 

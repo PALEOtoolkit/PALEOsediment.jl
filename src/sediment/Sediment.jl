@@ -10,4 +10,6 @@ include("SedimentTransport.jl")
 
 include("SedimentBioRates.jl")
 
+include("SedimentReservoirs.jl")
+
 end

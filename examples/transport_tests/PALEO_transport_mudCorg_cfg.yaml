@@ -1,0 +1,187 @@
+####################################
+# Abiotic sediment, Corg and O2 only
+# Advection driven by input flux of passive tracer
+####################################
+sediment_abiotic_O2:
+    parameters:
+        CIsotope: ScalarData
+        SIsotope: ScalarData
+    domains:
+        global:
+            # scalar domain
+     
+        fluxOceanfloor:
+            reactions:
+                floorstubparticulateflux:
+                    class: ReactionFluxTarget
+                    parameters:
+                        const_stub: true
+                        target_prefix: particulateflux_
+                        fluxlist: ["M", "Corg"]
+
+
+                    variable_attributes:
+                        #                                   Boudreau (1996) test cases
+                        #                                   Shelf/slope Rise    Rise
+                        #                                 
+                        #                                    130    18.5        18.5  umol/cm^2/y  
+                        particulateflux_Corg:initial_value: [130e-2, 18.5e-2,   18.5e-1]  # mol yr-1 = umol/cm^2/y * 1e-6 * area m^2 * 1e4
+                        # 
+                        # add M to generate advection [0.03e-2,   0.003e-2,   0.003e-2]  # m yr-1
+                        # w 1 m yr-1 -> 0.2 =  m^3 yr-1 / m^2  volume to add (for porosity 0.8)
+                        #        0.2 m^3 yr-1     = 0.2 / 12e-6 = 1.66e4 mol yr-1 (for molar volume of 12e-6 m^3 / mol)
+                        particulateflux_M:initial_value:  [5.0,   0.5,   5.0]  # mol yr-1 (NB: [1, 1, 10] m^2 columns)
+
+                    
+                floorstubsoluteflux:
+                    class: ReactionFluxTarget
+                    parameters:
+                        target_prefix: soluteflux_
+                        fluxlist: ["O2"]
+
+
+        fluxOceanBurial:       
+            reactions:
+                transfer:
+                    class: ReactionFluxTarget
+                    parameters:
+                        target_prefix: flux_
+                        fluxlist: ["M", "Corg", "O2"]  # include solutes if ReactionSedimentTransport w_solute = true
+                        
+ 
+        oceanfloor:
+
+            reactions:
+                grid:
+                    class: ReactionUnstructuredVectorGrid
+                    parameters:
+                        ncells: 3
+
+                floorstubphys: 
+                    class: ReactionConst
+                    parameters:
+                        constnames: ["Afloor", "zfloor", "temp", "sal", "phi", "phimin", "w_accum", "zbio", "Dbio", "alpha"]
+                    variable_attributes:
+                        #                       Boudreau (1996) test cases
+                        #                       Shelf/slope Rise    Rise x 10
+                        Afloor:initial_value:   [1.0,       1.0,        10.0] # m^2
+                        zfloor:initial_value:   [-100.0, -100.0,        -1000.0] # m
+                        temp:initial_value:     [278.15,    275.15,     275.15]  # K
+                        sal:initial_value:      35.0 # psu
+                        phi:initial_value:      [0.8,       0.8,        0.8] # surface porosity
+                        phimin:initial_value:   [0.7,       0.7,        0.7] # minimum porosity
+                        # w_accum:initial_value:  [0.03e-2,   0.003e-2,   0.003e-2]  # m yr-1
+                        w_accum:initial_value:  0.0 # add M explicitly
+                        zbio:initial_value:     0.1  # m, 10 cm bioturbation depth
+                        Dbio:initial_value:     [1.35e-4,   0.0,        0.269e-4] # m^2 yr-1
+                        alpha:initial_value:    0.0     # yr-1
+
+                floorstubsoluteconc: 
+                    class: ReactionConst
+                    parameters:
+                        constnames: ["O2_conc"]
+                    variable_attributes:
+                        #                       Boudreau (1996) test cases
+                        #                       Shelf/slope Rise        Rise
+                        O2_conc:initial_value:   [0.250,    0.180,        0.180]  # mol m-3
+
+                transfer_particulatefluxOceanfloor:
+                    class: ReactionFluxTransfer
+                    parameters:
+                        transfer_matrix:      Identity
+                        input_fluxes:         fluxOceanfloor.particulateflux_$fluxname$
+                        output_fluxes:        sediment.oceanfloor.$fluxname$_sms
+                    variable_links:           
+                
+
+        sediment:
+            reactions:                
+
+                gridsed:
+                    class: ReactionSedimentGridn1D
+                    parameters:
+                        L:                             0.15  # 0.15m column with 60 x 2.5mm bins
+                        ncellspercol:                  60
+                        
+                physsed:
+                    class: ReactionSedimentPhys
+                    parameters:                        
+                        f_porosity:                    Const
+                        # zpor:                          0.1 # (m) lengthscale for porosity
+                        w_solute:                      true  # w_solute = w_solid at base of column
+
+                bioratesed:
+                    class: ReactionSedimentBioRates
+
+                transportsedsolid:
+                    class: ReactionSedimentTransportSolid
+                    parameters:
+                        trspt_sms_ext:  _trspt_sms
+
+                transportsedsolute:
+                    class: ReactionSedimentTransportSolute
+                    parameters:                        
+                        solute_burial_flux:                      true  # include solute burial flux terms
+                       
+                reservoir_O2:
+                    class: ReactionReservoirTotal
+                    parameters:
+                        state_conc: true
+                    variable_links:
+                        R*:                             O2*
+                        volume:                         volume_solute
+                    variable_attributes:
+                        R_conc:vphase:                  VP_Solute                    
+                        R_conc:initial_value:                0.0  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
+                        R_conc:norm_value:                   200e-3                        
+                        R_conc:diffusivity_speciesname: O2 # 2e-5 # cm^2/s approx constant
+                        # R_conc:gamma:                   0.5 # test value for reading bioirrigation coeff (O2 should usually be 1.0)
+
+                # passive "mud" solid phase
+                reservoir_M:
+                    class: ReactionSedSolidReservoirTotal
+                    parameters:
+                        molar_volume:                   12e-6 # m^3 / mol M  (M 30 g mol,  density 2.5 g / cm3  = 30 / 2.5 * 1e-6 )
+                    variable_links:
+                        R*:                             M*  # M for mud
+                        volume:                         volume_solid
+                    variable_attributes:
+                        R_conc:vphase:                  VP_Solid                        
+                        R:initial_value:                0.0  # concentration m-3 solid phase
+                        R:norm_value:                   8.3e4  # mol m-3 solid  (~ 1 / molar_volume)
+
+                reservoir_Corg:
+                    class: ReactionSedSolidReservoirTotal
+                    parameters:
+                        molar_volume:                   12e-6 # m^3 / mol M  (Cx 30 g mol,  density 2.5 g / cm3  = 30 / 2.5 * 1e-6 )
+                    variable_links:
+                        R*:                             Corg*
+                        volume:                         volume_solid
+                    variable_attributes:
+                        R_conc:vphase:                  VP_Solid                        
+                        R:initial_value:                0.0  # concentration m-3 solid phase
+                        R:norm_value:                   8.3e4  # mol m-3 solid  (~ 1 / molar_volume)
+                                         
+    
+                pocdecay:
+                    class: ReactionParticleDecay
+                    parameters:
+                        # decay_timescale:     1.6393  # yr,  0.61 yr-1
+                        decay_timescale:     1e2
+                        # decay_timescale:     1e9
+                    variable_links:
+                        Particle*:       Corg*
+                        decayflux:       POC_decay
+
+                pocdecay_flux:
+                    class: ReactionFluxTarget
+                    parameters:
+                        target_prefix: ""
+                        fluxlist: ["POC_decay"]
+
+
+        sedimentfloor:
+            reactions:
+           
+
+

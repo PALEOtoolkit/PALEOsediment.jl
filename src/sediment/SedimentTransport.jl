@@ -61,6 +61,8 @@ Base.@kwdef mutable struct ReactionSedimentTransportSolid{P} <: PB.AbstractReact
     base::PB.ReactionBase
 
     pars::P = PB.ParametersTuple(
+        PB.ParString("trspt_sms_ext", "_sms", allowed_values=["_sms", "_trspt_sms"],
+            description="extension to use to accumulate advective transport contributions"),
 
         # PB.ParBool("chargebalance", false,
         #    description="TODO true to calculate Coulombic coupling and migration to maintain charge balance"),
@@ -84,9 +86,15 @@ function PB.register_dynamic_methods!(rj::ReactionSedimentTransportSolid)
         PB.VarDep("phi_solid_upper",               "",         "1.0 - porosity (volume fraction of solid phase) on cell upper face"),
         PB.VarDep("phi_solid_lower",               "",         "1.0 - porosity (volume fraction of solid phase) on cell lower face"),
         PB.VarDep("volume_solid",                  "m^3",      "solid volume of sediment cells"),
-        PB.VarDep("w_solid_upper",                 "m yr-1",   "solid phase advection velocity (downwards is -ve) at cell upper face"),
-        PB.VarDep("w_solid_lower",                 "m yr-1",   "solid phase advection velocity (downwards is -ve) at cell lower face"),
     ]
+
+    phys_vars_w = vcat(
+        phys_vars,
+        [
+            PB.VarDep("w_solid_upper",                 "m yr-1",   "solid phase advection velocity (downwards is -ve) at cell upper face"),
+            PB.VarDep("w_solid_lower",                 "m yr-1",   "solid phase advection velocity (downwards is -ve) at cell lower face"),
+        ],
+    )
 
 
     bio_vars = [
@@ -96,21 +104,33 @@ function PB.register_dynamic_methods!(rj::ReactionSedimentTransportSolid)
     (
         vars_solid_conc,
         vvars_solid_sms,
+        vvars_solid_trspt_sms,
         vvars_solid_fluxOceanBurial,
         totals_mult,
-    ) = find_solid_vars(rj.domain)
+    ) = find_solid_vars(rj.domain, rj.pars.trspt_sms_ext[])
     empty!(rj.solid_totals_multipliers)
     append!(rj.solid_totals_multipliers, totals_mult)
 
     PB.add_method_do!(
         rj,
-        do_sediment_transport_solid,
+        do_sediment_diffuse_solid,
         (
             PB.VarList_namedtuple(PB.VarDep.(PALEOsediment.Sediment.SedimentGrid.grid_vars)),
             PB.VarList_namedtuple(phys_vars),
             PB.VarList_namedtuple(bio_vars),
             PB.VarList_tuple(vars_solid_conc),
             PB.VarList_ttuple(vvars_solid_sms),
+        ),
+    )
+
+    PB.add_method_do!(
+        rj,
+        do_sediment_advect_solid,
+        (
+            PB.VarList_namedtuple(PB.VarDep.(PALEOsediment.Sediment.SedimentGrid.grid_vars)),
+            PB.VarList_namedtuple(phys_vars_w),
+            PB.VarList_tuple(vars_solid_conc),
+            PB.VarList_ttuple(vvars_solid_trspt_sms),
             PB.VarList_ttuple(vvars_solid_fluxOceanBurial),
         ),
     )
@@ -129,7 +149,7 @@ function PB.register_dynamic_methods!(rj::ReactionSedimentTransportSolid)
 end
 
 
-function find_solid_vars(domain::PB.Domain)
+function find_solid_vars(domain::PB.Domain, trspt_sms_ext)
     # Find all solid phase concentration variables with attribute :vphase == VP_Solid, and :advect == true,
     # and name of form `<rootname>_conc`.
     # Define `totalname` from :totalnames attribute if present, otherwise set `totalname = rootname`.
@@ -141,7 +161,7 @@ function find_solid_vars(domain::PB.Domain)
     )
     conc_domvars = PB.get_variables(domain, filter_conc)
 
-    vars_conc, vvars_sms, vvars_fluxOceanBurial, totals_mult = [], [], [], Vector{Float64}[]
+    vars_conc, vvars_sms, vvars_trspt_sms, vvars_fluxOceanBurial, totals_mult = [], [], [], [], Vector{Float64}[]
     for v in conc_domvars
         v.name[end-4:end] == "_conc" ||
             error("find_solid_vars: Variable $(PB.fullname(v)) has :advect attribute == true but is not named _conc")
@@ -158,21 +178,23 @@ function find_solid_vars(domain::PB.Domain)
         totalnamesmults = (ismissing(totalnamesmults) || isempty(totalnamesmults)) ? [rootname] : totalnamesmults
       
         # TODO look up and use existing variables, if present
-        st_sms, st_fluxoceanburial, st_mult = [], [], Float64[] 
+        st_sms, st_trspt_sms, st_fluxoceanburial, st_mult = [], [], [], Float64[] 
         for tnm in totalnamesmults
             tmult, tname = PALEOaqchem.parse_number_name(tnm)
             push!(st_sms, PB.VarContrib(tname*"_sms", "mol yr-1", ""))
+            push!(st_trspt_sms, PB.VarContrib(tname*trspt_sms_ext, "mol yr-1", ""))
             push!(st_fluxoceanburial,
                 PB.VarContribColumn("fluxOceanBurial_flux_"*tname=>"fluxOceanBurial.flux_"*tname, "mol yr-1", "")
             )
             push!(st_mult, tmult)
         end
         push!(vvars_sms, st_sms)
+        push!(vvars_trspt_sms, st_trspt_sms)
         push!(vvars_fluxOceanBurial, st_fluxoceanburial)
         push!(totals_mult, st_mult)
     end
 
-    return (vars_conc, vvars_sms, vvars_fluxOceanBurial, totals_mult)
+    return (vars_conc, vvars_sms, vvars_trspt_sms, vvars_fluxOceanBurial, totals_mult)
 end
 
 function setup_sediment_transport_solid(
@@ -206,12 +228,63 @@ function setup_sediment_transport_solid(
 end
 
 
-function do_sediment_transport_solid(
+function do_sediment_diffuse_solid(
     m::PB.ReactionMethod,
     (
         grid_vars,
         phys_vars,
         bio_vars,
+        vars_solid_conc,
+        vvars_solid_trspt_sms,
+    ),
+    cellrange::PB.AbstractCellRange,
+    deltat
+)
+    rj = m.reaction
+
+    function _calc_solid_species_transport(
+        solid_conc,
+        solid_totals_multipliers,
+        solid_trspt_smss, # Tuple of arrays
+        (
+            grid_vars,
+            phys_vars,
+            bio_vars,
+            icol, colindices,
+        )
+    )        
+        calc_diffuse_column(
+            grid_vars.Abox, grid_vars.zupper, grid_vars.zmid, phys_vars.phi_solid,
+            bio_vars.diff_bioturb, nothing, solid_conc, solid_totals_multipliers, solid_trspt_smss,
+            colindices
+        )
+
+        return nothing
+    end
+
+    for (icol, colindices) in cellrange.columns
+        PB.IteratorUtils.foreach_longtuple_p(
+            _calc_solid_species_transport,
+            vars_solid_conc,
+            rj.solid_totals_multipliers,
+            vvars_solid_trspt_sms,
+            (
+                grid_vars,
+                phys_vars,
+                bio_vars,
+                icol, colindices,
+            ),
+        )
+    end
+
+    return nothing
+end
+
+function do_sediment_advect_solid(
+    m::PB.ReactionMethod,
+    (
+        grid_vars,
+        phys_vars,
         vars_solid_conc,
         vvars_solid_sms,
         vvars_solid_fluxOceanBurial,
@@ -229,7 +302,6 @@ function do_sediment_transport_solid(
         (
             grid_vars,
             phys_vars,
-            bio_vars,
             icol, colindices,
         )
     )        
@@ -238,12 +310,6 @@ function do_sediment_transport_solid(
             solid_conc, solid_totals_multipliers, solid_smss,
             nothing, nothing, solid_fluxOceanBurials,
             icol, colindices
-        )
-
-        calc_diffuse_column(
-            grid_vars.Abox, grid_vars.zupper, grid_vars.zmid, phys_vars.phi_solid,
-            bio_vars.diff_bioturb, nothing, solid_conc, solid_totals_multipliers, solid_smss,
-            colindices
         )
 
         return nothing
@@ -259,7 +325,6 @@ function do_sediment_transport_solid(
             (
                 grid_vars,
                 phys_vars,
-                bio_vars,
                 icol, colindices,
             ),
         )
