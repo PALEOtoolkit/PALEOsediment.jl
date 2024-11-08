@@ -18,13 +18,12 @@ and add a contribution to `volume_change_sms (m^3 yr-1)` calculated from `R_sms`
 Creates `R_conc` (mol m-3) and `R_conc_sms` (mol m-3 yr-1) as state variable and source-sink provided to the solver, 
 and calculates `R` (mol).
 
-Accumulation of fluxes into _sms is split into `R_sms` and `R_trspt_sms` to allow calculation of advective velocity from `volume_change_sms`:
-- biogeochemical transformations and diffusive transport (bioturbation) should be added to `R_sms` (mol yr-1) 
-(these are included in `volume_change_sms`)
+Accumulation of fluxes into `_sms` is split into `R_sms` and `R_trspt_sms` to allow calculation of advective velocity from `volume_change_sms`:
+- biogeochemical transformations and diffusive transport (bioturbation) should be added to `R_sms` (mol yr-1) (these are included in `volume_change_sms`)
 - advective transport should be added to `R_trspt_sms` (not included in `volume_change_sms`).
-- `R_conc_sms` adds up contributions from `R_sms` and `R_trspt_sms` for the solver.
+- `R_conc_sms` adds up contributions from `R_sms` and `R_trspt_sms` for use by the numerical solver.
 
-In addition:
+Isotopes:
 - if parameter `field_data <: AbstractIsotopeScalar` (eg `IsotopeLinear`), a Property `R_delta` is created.
 - `ReactionSedSolidReservoirTotal` also calculates the Domain total `R_total` (units mol), eg to check budgets.
 
@@ -33,9 +32,6 @@ Local name prefix `R` should then be renamed using `variable_links:` in the conf
 # Initialisation
 Initial value is set using `variable_attributes:` in the configuration file, using `R_conc:initial_value (mol m-3 solid phase)`
 and `R_conc:initial_delta`.
-
-Transport is defined by attributes `:advect`, `:vertical_movement` (m d-1) set on the concentration variable `R_conc`. Optical
-extinction is defined by the `:specific_light_extinction` (m^2 mol-1) attribute set on the concentration variable `R_conc`.
 
 # Example configuration in .yaml file
                 reservoir_Corg:  # sediment Corg
@@ -47,8 +43,8 @@ extinction is defined by the `:specific_light_extinction` (m^2 mol-1) attribute 
                         volume:                         volume_solid
                     variable_attributes:
                         R_conc:vphase:                  VP_Solid                        
-                        R:initial_value:                0.0  # concentration m-3 solid phase
-                        R:norm_value:                   8.3e4  # mol m-3 solid  (~ 1 / molar_volume)
+                        R_conc:initial_value:           0.0  # concentration m-3 solid phase
+                        R_conc:norm_value:              8.3e4  # mol m-3 solid  (~ 1 / molar_volume)
 
 # See also
 ReactionReservoir

@@ -11,5 +11,13 @@ SedimentPhys.ReactionSedimentPhys
 SedimentBioRates.ReactionSedimentBioRates
 SedimentTransport.ReactionSedimentTransportSolid
 SedimentTransport.ReactionSedimentTransportSolute
+```
+
+## Sediment reservoirs
+```@meta
+CurrentModule = PALEOsediment.Sediment
+```
+
+```@docs
 SedimentReservoirs.ReactionSedSolidReservoir
 ```
