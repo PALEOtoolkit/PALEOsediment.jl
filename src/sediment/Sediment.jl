@@ -12,4 +12,6 @@ include("SedimentBioRates.jl")
 
 include("SedimentReservoirs.jl")
 
+include("SedimentTransportDeprecated.jl")
+
 end
