@@ -60,7 +60,7 @@ sediment_abiotic_O2:
                 floorstubphys: 
                     class: ReactionConst
                     parameters:
-                        constnames: ["Afloor", "zfloor", "temp", "sal", "phi", "phimin", "w_accum", "zbio", "Dbio", "alpha"]
+                        constnames: ["Afloor", "zfloor", "temp", "sal", "phi", "phimin", "zbio", "Dbio", "alpha"]
                     variable_attributes:
                         #                       Boudreau (1996) test cases
                         #                       Shelf/slope Rise    Rise x 10
@@ -70,8 +70,7 @@ sediment_abiotic_O2:
                         sal:initial_value:      35.0 # psu
                         phi:initial_value:      [0.8,       0.8,        0.8] # surface porosity
                         phimin:initial_value:   [0.7,       0.7,        0.7] # minimum porosity
-                        # w_accum:initial_value:  [0.03e-2,   0.003e-2,   0.003e-2]  # m yr-1
-                        w_accum:initial_value:  0.0 # add M explicitly
+                        # w_accum:initial_value:  [0.03e-2,   0.003e-2,   0.003e-2]  # m yr-1 
                         zbio:initial_value:     0.1  # m, 10 cm bioturbation depth
                         Dbio:initial_value:     [1.35e-4,   0.0,        0.269e-4] # m^2 yr-1
                         alpha:initial_value:    0.0     # yr-1
@@ -147,8 +146,8 @@ sediment_abiotic_O2:
                         volume:                         volume_solid
                     variable_attributes:
                         R_conc:vphase:                  VP_Solid                        
-                        R:initial_value:                0.0  # concentration m-3 solid phase
-                        R:norm_value:                   8.3e4  # mol m-3 solid  (~ 1 / molar_volume)
+                        R_conc:initial_value:                0.0  # concentration m-3 solid phase
+                        R_conc:norm_value:                   8.3e4  # mol m-3 solid  (~ 1 / molar_volume)
 
                 reservoir_Corg:
                     class: ReactionSedSolidReservoirTotal
@@ -159,8 +158,8 @@ sediment_abiotic_O2:
                         volume:                         volume_solid
                     variable_attributes:
                         R_conc:vphase:                  VP_Solid                        
-                        R:initial_value:                0.0  # concentration m-3 solid phase
-                        R:norm_value:                   8.3e4  # mol m-3 solid  (~ 1 / molar_volume)
+                        R_conc:initial_value:                0.0  # concentration m-3 solid phase
+                        R_conc:norm_value:                   8.3e4  # mol m-3 solid  (~ 1 / molar_volume)
                                          
     
                 pocdecay:

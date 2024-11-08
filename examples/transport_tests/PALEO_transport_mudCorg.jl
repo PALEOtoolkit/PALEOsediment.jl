@@ -26,7 +26,7 @@ model = PB.create_model_from_config(
 # Steady state solutions
 ############################
 
-tspan=(0.0, 100000.0)
+tspan=(0.0, 1e5)
 toutput=[0.0, 1e-1, 1e0, 1e1, 1e2, 1e3, 1e4, 1e5]
 
 initial_state, modeldata = PALEOmodel.initialize!(model)

@@ -66,12 +66,13 @@ end
 
 function plot_w(
     output;
+    colT=[1e12],
     colrange=1:3,
     pager=PALEOmodel.DefaultPlotPager(),
 )
 
     for icol in colrange
-        pager(plot(title="advection velocity $icol", output, ["sediment.w_solid_upper", "sediment.w_solid_lower", "sediment.w_solute_upper",  "sediment.w_solute_lower"], (column=icol, tmodel=1e12), xlabel="w (m yr-1)", swap_xy=true))
+        pager(plot(title="advection velocity $icol", output, ["sediment.w_solid_upper", "sediment.w_solid_lower", "sediment.w_solute_upper",  "sediment.w_solute_lower"], (tmodel=colT, column=icol,), xlabel="w (m yr-1)", swap_xy=true))
     end
 
 end

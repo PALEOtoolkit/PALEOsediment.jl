@@ -11,14 +11,26 @@ import Infiltrator # julia debugger
 """
     ReactionSedimentPhys
 
-Sediment physical parameters
+Calculate sediment physical parameters: porosity, advection velociy, salinity, temperature.
 
 The sediment grid is defined by eg [`PALEOsediment.Sediment.SedimentGrid.ReactionSedimentGridn1D`](@ref).
 
+Porosity is set to a prescribed time-independent functional form defined by `f_porosity` parameter.
+
+Advection velocity may calculated in two ways:
+- as a time-independent function of depth calculated from `oceanfloor.w_accum`, and assuming no volume changes in solid phase.
+- calculated from solid-phase volume changes accumulated into `volume_change_sms` variable.
+
 ## Physical environment
 
-Accumulation rate, and porosity are set by `oceanfloor` Variables.
+Per-column environment is defined by `oceanfloor` variables.
 
+Parameters for prescribed time-independent porosity are set by `oceanfloor.phi` and optionally `oceanfloor.phimin`
+
+Prescribed accumulation rate is set by `oceanfloor.w_accum` (omit or set to zero to calculate 
+accumulation rate from solid-phase volume changes).
+
+Temperature and salinity are set by `oceanfloor.sal`, `oceanfloor.temp`.
 
 # Parameters
 $(PARS)
@@ -49,7 +61,7 @@ function PB.register_methods!(rj::ReactionSedimentPhys)
         PB.VarDepColumn("oceanfloor_sal"=>"oceanfloor.sal",                 "psu",      "oceanfloor salinity"),
         PB.VarDepColumn("oceanfloor_phi"=>"oceanfloor.phi",                 "",         "sediment surface porosity"),
         PB.VarDepColumn("oceanfloor_phimin"=>"(oceanfloor.phimin)",         "",         "sediment porosity at infinite depth"),
-        PB.VarDepColumn("oceanfloor_w_accum"=>"oceanfloor.w_accum",         "m yr-1",   "sediment accumulation rate (+ve)"),
+        PB.VarDepColumn("oceanfloor_w_accum"=>"(oceanfloor.w_accum)",       "m yr-1",   "sediment accumulation rate (+ve)"),
     ]
 
     phys_vars = [
@@ -183,8 +195,11 @@ function do_sediment_w(
 )
 
     for (icol, colindices) in cellrange.columns
+        # indices for upper, lower cells 
+        iu, il = first(colindices), last(colindices)
+
         # solid advection due to change in solid-phase volume
-        last_w_solid_upper = zero(w_vars.w_solid_upper[first(colindices)])
+        last_w_solid_upper = zero(w_vars.w_solid_upper[iu])
         for i in colindices            
             w_vars.w_solid_upper[i] = last_w_solid_upper            
             # m yr-1 =   m3 yr-1          / m^3
@@ -193,19 +208,21 @@ function do_sediment_w(
             last_w_solid_upper = w_vars.w_solid_lower[i]
         end
 
-        # add prescribed solid advection velocity
-        for i in colindices  
-            w_vars.w_solid_upper[i] += (-oceanfloor_vars.oceanfloor_w_accum[icol] *
-                                 (1.0 - phys_vars.phi[first(colindices)]) / (1.0 - phys_vars.phi_upper[i]))
-            w_vars.w_solid_lower[i] += (-oceanfloor_vars.oceanfloor_w_accum[icol] *
-                                 (1.0 - phys_vars.phi[first(colindices)]) / (1.0 - phys_vars.phi_lower[i]))
+        # add prescribed solid advection velocity, calculated from accumulation rate at sediment surface and assuming time-independent prescribed porosity
+        if !isnothing(oceanfloor_vars.oceanfloor_w_accum)
+            for i in colindices  
+                w_vars.w_solid_upper[i] += (-oceanfloor_vars.oceanfloor_w_accum[icol] *
+                                    (1.0 - phys_vars.phi[iu]) / (1.0 - phys_vars.phi_upper[i]))
+                w_vars.w_solid_lower[i] += (-oceanfloor_vars.oceanfloor_w_accum[icol] *
+                                    (1.0 - phys_vars.phi[iu]) / (1.0 - phys_vars.phi_lower[i]))
+            end
         end
 
-        # solute advection
+        # solute advection, assuming time-independent prescribed porosity
         if pars.w_solute[]
             # solute advection velocity, assuming solute is comoving with solid at base of column
-            phi_floor = phys_vars.phi_lower[last(colindices)]
-            w_solute_floor = w_vars.w_solid_lower[last(colindices)]                
+            phi_floor = phys_vars.phi_lower[il]
+            w_solute_floor = w_vars.w_solid_lower[il]                
             w_vars.w_solute_upper[colindices] .= (w_solute_floor * phi_floor) ./ @view(phys_vars.phi_upper[colindices])
             w_vars.w_solute_lower[colindices] .= (w_solute_floor * phi_floor) ./ @view(phys_vars.phi_lower[colindices])
         else

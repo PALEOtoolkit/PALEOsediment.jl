@@ -18,7 +18,7 @@ include("../plot_sediment.jl")
 
 
 model = PB.create_model_from_config(
-    joinpath(@__DIR__, "PALEO_transport_mud_cfg.yaml"), 
+    joinpath(@__DIR__, "PALEO_transport_Corgdecay_cfg.yaml"), 
     "sediment_abiotic_O2",
 )
 
@@ -26,8 +26,8 @@ model = PB.create_model_from_config(
 # Steady state solutions
 ############################
 
-tspan=(0.0, 1e4)
-toutput=[0.0, 1e-1, 1e0, 1e1, 1e2, 1e3, 1e4]
+tspan=(0.0, 1e3)
+toutput=[0.0, 1e-1, 1e0, 1e1, 1e2, 1e3]
 
 initial_state, modeldata = PALEOmodel.initialize!(model)
 
@@ -41,7 +41,8 @@ PALEOmodel.SteadyState.steadystate_ptcForwardDiff(
     deltat_fac=2.0,
     tss_output=toutput,
     solvekwargs=(
-        ftol=1e-7,
+        # ftol=1e-7,
+        ftol=1e-5,
         iterations=20,
         method=:newton,
         linesearch=LineSearches.Static(),
@@ -65,9 +66,9 @@ PALEOmodel.SteadyState.steadystate_ptcForwardDiff(
 gr(size=(900, 600))
 pager = PALEOmodel.PlotPager((1,3), (legend_background_color=nothing, margin=(5, :mm)))
 
-plot_w(paleorun.output; pager=pager)
-plot_solids(paleorun.output, solids=["M"]; colT=toutput, pager=pager)
-plot_solids_volume_frac(paleorun.output, solids=["M"]; colT=toutput, pager=pager)
+plot_w(paleorun.output; colT=[0.0, 1e12], pager=pager)
+plot_solids(paleorun.output, solids=["M", "Corg"]; colT=toutput, pager=pager)
+plot_solids_volume_frac(paleorun.output, solids=["M", "Corg"]; colT=toutput, pager=pager)
 plot_solutes(paleorun.output, solutes=["O2"]; colT=toutput, pager=pager)
 
 pager(:newpage)
