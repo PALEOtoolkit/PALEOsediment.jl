@@ -66,12 +66,13 @@ end
 
 function plot_w(
     output;
+    colT=[1e12],
     colrange=1:3,
     pager=PALEOmodel.DefaultPlotPager(),
 )
 
     for icol in colrange
-        pager(plot(title="advection velocity $icol", output, ["sediment.w_solid", "sediment.w_solute"], (column=icol, tmodel=1e12), xlabel="w (m yr-1)", swap_xy=true))
+        pager(plot(title="advection velocity $icol", output, ["sediment.w_solid_upper", "sediment.w_solid_lower", "sediment.w_solute_upper",  "sediment.w_solute_lower"], (tmodel=colT, column=icol,), xlabel="w (m yr-1)", swap_xy=true))
     end
 
 end
@@ -206,6 +207,24 @@ function plot_solids(
     for s in solids
         for icol in colrange
             pager(plot(title="$s flux Oceanfloor $icol", output, ["fluxOceanfloor.particulateflux_$s"], (cell=icol,), ylabel="$s (mol yr-1)",))
+        end
+    end
+
+    pager(:newpage)
+
+    return nothing
+end
+
+function plot_solids_volume_frac(
+    output;
+    solids=["Corg1"],
+    colT=[-1e12, 0.1, 1.0, 10.0, 100.0, 1000.0, 1e12],
+    colrange=1:3,
+    pager=PALEOmodel.DefaultPlotPager(),
+)
+    for s in solids
+        for icol in colrange
+            pager(plot(title="[$s] $icol", output, ["sediment.$(s)_volume_frac"], (tmodel=colT, column=icol), xlabel="solid phase volume fraction", swap_xy=true))
         end
     end
 

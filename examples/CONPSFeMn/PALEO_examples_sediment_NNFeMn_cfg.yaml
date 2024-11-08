@@ -138,18 +138,42 @@ sediment_Corg_O2NNMnFeS:
                         bioO2halfmax:           20e-3 # (mol m-3) (Dale 2015 'a', 20 uM)
                         bioO2decreaserate:      12e-3 # (mol m-3) (Dale 2015 'b', 12 uM)
 
-                transportsed:
-                    class: ReactionSedimentTransport
-                    parameters:
-                        L:                              0.30  # (m) column length
-                        ncellspercol:                   100 # 300
-                        f_grid:                         quadratic
-                        grid_eta:                       0.075
-                        zdbl:                           0.04e-2  # diffusive boundary layer at sediment-water interface
-                        f_porosity:                     ExpAtten # 
-                        zpor:                           0.1 # (m) lengthscale for porosity decrease
-                        w_solute:                       true  # include solute advection (w_solute = w_solid at base of column)
+                # transportsed:
+                #     class: ReactionSedimentTransport
+                #     parameters:
+                #         L:                              0.30  # (m) column length
+                #         ncellspercol:                   100 # 300
+                #         f_grid:                         quadratic
+                #         grid_eta:                       0.075
+                #         zdbl:                           0.04e-2  # diffusive boundary layer at sediment-water interface
+                #         f_porosity:                     ExpAtten # 
+                #         zpor:                           0.1 # (m) lengthscale for porosity decrease
+                #         w_solute:                       true  # include solute advection (w_solute = w_solid at base of column)
 
+
+                gridsed:
+                    class: ReactionSedimentGridn1D
+                    parameters:
+                        L:                             0.30  # (m) column length
+                        ncellspercol:                  100 # 300
+                        f_grid:                        quadratic
+                        grid_eta:                      0.075
+                        
+                physsed:
+                    class: ReactionSedimentPhys
+                    parameters:                        
+                        f_porosity:                    ExpAtten #  Const
+                        zpor:                          0.1 # (m) lengthscale for porosity
+                        w_solute:                      true  # w_solute = w_solid at base of column
+
+                transportsedsolid:
+                    class: ReactionSedimentTransportSolid
+
+                transportsedsolute:
+                    class: ReactionSedimentTransportSolute
+                    parameters:
+                        zdbl:                           0.04e-2  # diffusive boundary layer at sediment-water interface                     
+                        solute_burial_flux:             true  # include solute burial flux terms
 
                 ################################################################################
                 # Solute reservoirs
