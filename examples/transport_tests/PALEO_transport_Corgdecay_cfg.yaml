@@ -126,7 +126,7 @@ sediment_abiotic_O2:
                         R_conc:vphase:                  VP_Solute                    
                         R_conc:initial_value:                0.0  # concentration m-3 (1027 kg m-3 * 200e-6 mol/kg-sw)
                         R_conc:norm_value:                   200e-3                        
-                        R_conc:diffusivity_speciesname: O2 # 2e-5 # cm^2/s approx constant
+                        R_conc:diffusivity_speciesname: O2 # "2e-5" # cm^2/s approx constant
                         # R_conc:gamma:                   0.5 # test value for reading bioirrigation coeff (O2 should usually be 1.0)
 
                 # passive "mud" solid phase
