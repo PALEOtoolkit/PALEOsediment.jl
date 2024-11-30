@@ -171,7 +171,7 @@ function find_solid_vars(domain::PB.Domain, trspt_sms_ext)
         # TODO look up and use existing variables, if present
         st_trspt_sms, st_fluxoceanburial, st_mult = [], [], Float64[] 
         for tnm in totalnamesmults
-            tmult, tname = PALEOaqchem.parse_number_name(tnm)
+            tmult, tname = PB.parse_number_name(tnm)
             push!(st_trspt_sms, PB.VarContrib(tname*trspt_sms_ext, "mol yr-1", ""))
             push!(st_fluxoceanburial,
                 PB.VarContribColumn("fluxOceanBurial_flux_"*tname=>"fluxOceanBurial.flux_"*tname, "mol yr-1", "")
@@ -246,7 +246,8 @@ function do_sediment_transport_solid(
     )        
         calc_diffuse_column(
             grid_vars.Abox, grid_vars.zupper, grid_vars.zmid, phys_vars.phi_solid,
-            bio_vars.diff_bioturb, nothing, solid_conc, solid_totals_multipliers, solid_trspt_smss,
+            bio_vars.diff_bioturb,
+            solid_conc, solid_totals_multipliers, solid_trspt_smss,
             colindices
         )
 
@@ -298,12 +299,6 @@ Sediment solute transport for n x 1D sediment columns.
 
 The sediment grid is defined by eg [`PALEOsediment.Sediment.SedimentGrid.ReactionSedimentGridn1D`](@ref).
 
-Physical parameters (porosity, advection velocity) are defined by eg [`PALEOsediment.Sediment.SedimentPhys.ReactionSedimentPhys](@ref).
-
-## Physical environment
-
-Bioturbation and bioirrigation rates should be supplied on the sediment grid by eg [`PALEOsediment.Sediment.SedimentBioRates.ReactionSedimentBioRates`](@ref).
-
 ## Transport components and species
 
 Each component `<totalname>` to be transported should be defined by a source-minus-sink flux `<totalname>_sms`,
@@ -311,10 +306,6 @@ and one or more concentration Variables with names of form `<speciesname>_conc`
 
 Solute concentration Variables are identified by attributes `vphase == VP_Solute` and `advect == true`,
 and are transported by diffusion, bioturbation and bioirrigation, and advection.
-Species-specific solute diffusivities are calculated either based on the attribute `diffusivity_speciesname` of the
-`<speciesname>_conc` solute Variables, which should be one of the  names available from
-`PALEOaqchem.MolecularDiffusion.create_solute_diffusivity_func`, or (if `diffusivity_speciesname` is not set ie an empty string)
-by the attribute `diffusivity` (units cm^2 s-1).
 
 Transport fluxes are then accumulated into vectors `<totalname>_sms`:
 - If the `totalnames` attribute is not set  on a variable `<speciesname>_conc`, then `totalname` is assumed to be the 
@@ -323,6 +314,17 @@ Transport fluxes are then accumulated into vectors `<totalname>_sms`:
   then this is used to define the appropriate vector of `[<totalname_n>_sms]` fluxes (allowing multiple species 
   concentrations with different transport properties or phases for each `<totalname>_sms`, and each species to contribute 
   to multiple `<totalname_n>_sms` with a stoichiometry multiplier `mult_n`).
+
+## Transport processes and physical environment
+
+Porosity (`phi`, `phi_lower`, `phi_upper`), tortuosity (`Dfac`), and advection velocity (`w_solute_lower [m yr-1]`, `w_solute_upper [m yr-1]`)
+are defined by eg [`PALEOsediment.Sediment.SedimentPhys.ReactionSedimentPhys](@ref).
+
+Bioturbation (`diff_bioturb [m^2 yr-1]`) and bioirrigation (`alpha_bioirrig [yr-1]`) rates should be supplied
+on the sediment grid by eg [`PALEOsediment.Sediment.SedimentBioRates.ReactionSedimentBioRates`](@ref).
+
+Molecular diffusivity should be supplied for each species by Variables `<speciesname>_moldiff [cm^2 s-1]` eg as calculated by
+`PALEOaqchem.MolecularDiffusion.ReactionAqMolecularDiffusion` or set to a constant using `PALEOboxes.ReactionConst`.
 
 ## Boundary conditions
 
@@ -393,7 +395,7 @@ function PB.register_dynamic_methods!(rj::ReactionSedimentTransportSolute)
         vars_solute_oceanfloor_conc,
         vvars_solute_fluxOceanfloor,
         vvars_solute_fluxOceanBurial,  # vector of empty vectors if rj.pars_w_solute[] == false
-        vars_solute_diff,
+        vars_moldiff,
         totals_mult,
     ) = find_solute_vars(rj.domain; include_burial_flux=rj.pars.solute_burial_flux[])
     empty!(rj.solute_totals_multipliers)
@@ -411,10 +413,8 @@ function PB.register_dynamic_methods!(rj::ReactionSedimentTransportSolute)
             PB.VarList_tuple(vars_solute_oceanfloor_conc),
             PB.VarList_ttuple(vvars_solute_fluxOceanfloor),
             PB.VarList_ttuple(vvars_solute_fluxOceanBurial),
-            PB.VarList_tuple(vars_solute_diff),
-            # fns_solutediff added in preparefn
+            PB.VarList_tuple(vars_moldiff),
         ),
-        preparefn=prepare_do_sediment_transport_solute,
     )
 
 
@@ -447,7 +447,7 @@ function find_solute_vars(domain::PB.Domain; include_burial_flux)
     )
     conc_domvars = PB.get_variables(domain, filter_conc)
 
-    vars_conc, vvars_sms, vars_oceanfloor_conc, vvars_fluxOceanfloor, vvars_fluxOceanBurial, vars_diff, totals_mult = [], [], [], [], [], [], Vector{Float64}[]
+    vars_conc, vvars_sms, vars_oceanfloor_conc, vvars_fluxOceanfloor, vvars_fluxOceanBurial, vars_moldiff, totals_mult = [], [], [], [], [], [], Vector{Float64}[]
     for v in conc_domvars
         v.name[end-4:end] == "_conc" ||
             error("find_solute_vars: Variable $(PB.fullname(v)) has :advect attribute == true but is not named _conc")
@@ -464,8 +464,8 @@ function find_solute_vars(domain::PB.Domain; include_burial_flux)
             PB.VarDepColumn(    "oceanfloor_"*rootname*"_conc"=>"oceanfloor."*rootname*"_conc", "mol m-3", "")
         )
 
-        push!(vars_diff,
-            PB.VarProp(   rootname*"_diff", "m^2/yr", "solute diffusivity")
+        push!(vars_moldiff,
+            PB.VarDep(   rootname*"_moldiff", "cm^2 s-1", "solute molecular diffusivity")
         )
 
         # per-totalvar _sms and flux output
@@ -475,7 +475,7 @@ function find_solute_vars(domain::PB.Domain; include_burial_flux)
         # TODO look up and use existing variable, if present
         st_sms, st_fluxoceanfloorsolute, st_fluxoceanburial, st_mult = [], [], [], Float64[] 
         for tnm in totalnamesmults
-            tmult, tname = PALEOaqchem.parse_number_name(tnm)
+            tmult, tname = PB.parse_number_name(tnm)
             push!(st_sms, PB.VarContrib(tname*"_sms", "mol yr-1", ""))
             push!(st_fluxoceanfloorsolute, PB.VarContribColumn("fluxOceanfloor_soluteflux_"*tname=>"fluxOceanfloor.soluteflux_"*tname, "mol yr-1", ""))
             if include_burial_flux
@@ -490,34 +490,9 @@ function find_solute_vars(domain::PB.Domain; include_burial_flux)
 
     end
 
-    return (vars_conc, vvars_sms, vars_oceanfloor_conc, vvars_fluxOceanfloor, vvars_fluxOceanBurial, vars_diff, totals_mult)
+    return (vars_conc, vvars_sms, vars_oceanfloor_conc, vvars_fluxOceanfloor, vvars_fluxOceanBurial, vars_moldiff, totals_mult)
 end
 
-
-"read :diffusivity_speciesname or :diffusivity attribute from _conc Variable and create solute diffusivity functions"
-function prepare_do_sediment_transport_solute(m::PB.ReactionMethod, vardata)
-
-    (_, _, _, vars_solute_conc, _, _, _, _, _,) = PB.get_variables_tuple(m)
-
-    diff_fns = []
-    for v_conc in vars_solute_conc
-        # solute diffusivity accessors and calculation method
-        diffusivity_speciesname = PB.get_domvar_attribute(v_conc, :diffusivity_speciesname, missing)
-        if ismissing(diffusivity_speciesname) || isempty(diffusivity_speciesname)
-            diffusivity = PB.get_domvar_attribute(v_conc, :diffusivity, missing)
-            if diffusivity isa Float64 
-                diffusivity_speciesname = string(diffusivity)
-            end
-        end
-        if ismissing(diffusivity_speciesname) || isempty(diffusivity_speciesname)
-            @error("prepare_do_sediment_transport_solute: no :diffusivity_speciesname or :diffusivity attribute found for Variable $(PB.fullname(v_conc.linkvar))")
-        end
-
-        push!(diff_fns, PALEOaqchem.MolecularDiffusion.create_solute_diffusivity_func(diffusivity_speciesname))
-    end
-
-    return (vardata..., Tuple(diff_fns))
-end
 
 function setup_sediment_transport_solute(
     m::PB.ReactionMethod,
@@ -569,8 +544,7 @@ function do_sediment_transport_solute(
         vars_solute_oceanfloor_conc,
         vvars_solute_fluxOceanfloor,
         vvars_solute_fluxOceanBurial,
-        vars_solute_diff,
-        fns_solutediff, # added by prepare_
+        vars_moldiff,
     ),
     cellrange::PB.AbstractCellRange,
     deltat
@@ -586,7 +560,7 @@ function do_sediment_transport_solute(
         solute_oceanfloor_conc,
         solute_fluxOceanfloors, # Tuple of arrays
         solute_fluxOceanBurial, # Tuple of arrays
-        solute_diff,
+        solute_moldiff,
         solute_gamma,
         (
             zdbl,
@@ -612,13 +586,14 @@ function do_sediment_transport_solute(
     
         calc_diffuse_column(
             grid_vars.Abox, grid_vars.zupper, grid_vars.zmid, phys_vars.phi,
-            solute_diff, bio_vars.diff_bioturb, solute_conc, solute_totals_multipliers, solute_smss,
+            SoluteCombinedDiffusivity(solute_moldiff, phys_vars.Dfac, bio_vars.diff_bioturb),
+            solute_conc, solute_totals_multipliers, solute_smss,
             colindices
         )
     
         calc_surface_dbl_column(
             grid_vars.Abox, zdbl, phys_vars.phi_upper,
-            solute_diff, phys_vars.Dfac, solute_conc, solute_totals_multipliers, solute_smss,
+            solute_moldiff, solute_conc, solute_totals_multipliers, solute_smss,
             solute_oceanfloor_conc, solute_fluxOceanfloors,
             icol, colindices
         )
@@ -636,19 +611,6 @@ function do_sediment_transport_solute(
 
     for (icol, colindices) in cellrange.columns
         PB.IteratorUtils.foreach_longtuple_p(
-            calc_solute_species_diffusivity,
-            vars_solute_diff,
-            fns_solutediff,
-            (
-                phys_vars.temp,
-                grid_vars.pressure,
-                phys_vars.sal,
-                phys_vars.Dfac,
-                colindices,
-            ),
-        )
-
-        PB.IteratorUtils.foreach_longtuple_p(
             _calc_solute_species_transport,
             vars_solute_conc,
             rj.solute_totals_multipliers,
@@ -656,7 +618,7 @@ function do_sediment_transport_solute(
             vars_solute_oceanfloor_conc,
             vvars_solute_fluxOceanfloor,
             vvars_solute_fluxOceanBurial,
-            vars_solute_diff,
+            vars_moldiff,
             rj.solute_gammas,
             (
                 pars.zdbl[],
@@ -672,33 +634,10 @@ function do_sediment_transport_solute(
     return nothing
 end
 
-
-"calculate tortuoisity-corrected solute diffusivity"
-function calc_solute_species_diffusivity(
-    solute_diff,
-    f_solute_diff,
-    (
-        temp,
-        pressure,
-        sal,
-        Dfac,
-        indices
-    )
-)
-
-    @inbounds for i in indices
-        #   m^2 yr-1             cm^2 s-1      bar dbar-1 dbar                      s yr-1  (cm m-1)^2
-        solute_diff[i] = (
-            f_solute_diff(temp[i], 0.1*pressure[i]+1.0, sal[i])*PB.Constants.k_secpyr*1e-4*Dfac[i]
-        )
-    end
-    return nothing
-end
-
 "calculate sediment surface flux across diffusive boundary layer thicknes zdbl"
 function calc_surface_dbl_column(
     area, zdbl, volfrac,
-    diff_tortuoisity, Dfac, conc, mults, smss,
+    moldiff, conc, mults, smss,
     ub_conc, ub_fluxouts,
     icol, colindices
 )
@@ -707,7 +646,8 @@ function calc_surface_dbl_column(
     # exchange at sediment-water interface, with diffusive boundary layer thickness zdbl
     dz = zdbl           # assume diffusion across zdbl to a sediment top cell with uniform concentration
     dc = ub_conc[icol] - conc[i]
-    sigma = diff_tortuoisity[i]/Dfac[i] # undo tortuosity correction to solute diffusivity
+    # m^2 yr-1  = cm^2 s-1     * s yr-1           * (cm m-1)^2
+    sigma = moldiff[i] * PB.Constants.k_secpyr*1e-4
     a = area[i]*volfrac[i]  # area * porosity
     flux = -a*sigma*dc/dz
     # ub_fluxout[icol] += mult*flux
@@ -861,7 +801,8 @@ for area, zupper, zmid, volfrac, two contributions to diff, conc, smss.
 TODO - use phi at cell face instead of interpolating from mid-points ?"
 function calc_diffuse_column(
     area, zupper, zmid, volfrac,
-    diff1, diff2, conc, mults, smss,
+    diff,
+    conc, mults, smss,
     colindices,
 )
 
@@ -874,10 +815,7 @@ function calc_diffuse_column(
             # linearly interpolate diff, area
             wtu = (zmid[lasti] - zupper[i])/dz
             wtl = (zupper[i]-zmid[i])/dz
-            sigma = wtu*diff1[lasti] + wtl*diff1[i]
-            if !isnothing(diff2)
-                sigma += wtu*diff2[lasti] + wtl*diff2[i]
-            end
+            sigma = wtu*diff[lasti] + wtl*diff[i]
             a = wtu*area[lasti]*volfrac[lasti] + wtl*area[i]*volfrac[i]
             flux = -a*sigma*dc/dz # +ve is upwards in column
             _add_fluxes(smss, mults, (lasti, flux))
@@ -891,6 +829,22 @@ function calc_diffuse_column(
 end
 
 
+"""
+    SoluteCombinedDiffusivity(moldiff::Vector, Dfac::Vector, bioturb::Vector) -> scd
+
+calculate `scd[i]` `cm^2 s-1`, tortuoisity-corrected solute diffusivity combined with bioturbation
+"""
+struct SoluteCombinedDiffusivity{M, D, B}
+    moldiff::M
+    Dfac::D
+    bioturb::B
+end
+
+function Base.getindex(scd::SoluteCombinedDiffusivity, i)
+    # m^2 yr-1  = cm^2 s-1     * s yr-1         * (cm m-1)^2
+    cd = scd.moldiff[i] * PB.Constants.k_secpyr*1e-4*scd.Dfac[i] + scd.bioturb[i]
+    return cd
+end
 
 """
     _add_fluxes(vecs, mults, (idx, flux))

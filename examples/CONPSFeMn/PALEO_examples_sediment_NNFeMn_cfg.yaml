@@ -169,6 +169,9 @@ sediment_Corg_O2NNMnFeS:
                 transportsedsolid:
                     class: ReactionSedimentTransportSolid
 
+                molecular_diffusivity:   
+                    class: ReactionAqMolecularDiffusion
+
                 transportsedsolute:
                     class: ReactionSedimentTransportSolute
                     parameters:
