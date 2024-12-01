@@ -3,7 +3,6 @@ module SedimentTransport
 import PALEOboxes as PB
 using PALEOboxes.DocStrings
 import PALEOsediment
-import PALEOaqchem
 
 import LinearAlgebra
 import SparseArrays
@@ -324,7 +323,7 @@ Bioturbation (`diff_bioturb [m^2 yr-1]`) and bioirrigation (`alpha_bioirrig [yr-
 on the sediment grid by eg [`PALEOsediment.Sediment.SedimentBioRates.ReactionSedimentBioRates`](@ref).
 
 Molecular diffusivity should be supplied for each species by Variables `<speciesname>_moldiff [cm^2 s-1]` eg as calculated by
-`PALEOaqchem.MolecularDiffusion.ReactionAqMolecularDiffusion` or set to a constant using `PALEOboxes.ReactionConst`.
+`PALEOaqchem.MolecularDiffusion.ReactionAqMolecularDiffusivity` or set to a constant using `PALEOboxes.ReactionConst`.
 
 ## Boundary conditions
 
@@ -832,7 +831,8 @@ end
 """
     SoluteCombinedDiffusivity(moldiff::Vector, Dfac::Vector, bioturb::Vector) -> scd
 
-calculate `scd[i]` `cm^2 s-1`, tortuoisity-corrected solute diffusivity combined with bioturbation
+Calculate `scd[i]` `m^2 yr-1`: tortuoisity-corrected solute diffusivity combined with bioturbation
+for Vector index `i`.
 """
 struct SoluteCombinedDiffusivity{M, D, B}
     moldiff::M
@@ -840,6 +840,7 @@ struct SoluteCombinedDiffusivity{M, D, B}
     bioturb::B
 end
 
+# implementation of scd[i]
 function Base.getindex(scd::SoluteCombinedDiffusivity, i)
     # m^2 yr-1  = cm^2 s-1     * s yr-1         * (cm m-1)^2
     cd = scd.moldiff[i] * PB.Constants.k_secpyr*1e-4*scd.Dfac[i] + scd.bioturb[i]

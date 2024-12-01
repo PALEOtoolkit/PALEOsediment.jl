@@ -144,7 +144,7 @@ sediment_abiotic_O2:
                     class: ReactionSedimentTransportSolid
 
                 molecular_diffusivity:   
-                    class: ReactionAqMolecularDiffusion
+                    class: ReactionAqMolecularDiffusivity
 
                 transportsedsolute:
                     class: ReactionSedimentTransportSolute

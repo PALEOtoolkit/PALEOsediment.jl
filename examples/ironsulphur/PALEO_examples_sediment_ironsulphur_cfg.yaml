@@ -141,7 +141,7 @@ sediment_Corg_O2_Fe:
                     class: ReactionSedimentTransportSolid
 
                 molecular_diffusivity:   
-                    class: ReactionAqMolecularDiffusion
+                    class: ReactionAqMolecularDiffusivity
 
                 transportsedsolute:
                     class: ReactionSedimentTransportSolute
@@ -524,7 +524,7 @@ sediment_Corg_O2_Fe_pyr_carb:
                     class: ReactionSedimentTransportSolid
 
                 molecular_diffusivity:   
-                    class: ReactionAqMolecularDiffusion
+                    class: ReactionAqMolecularDiffusivity
 
                 transportsedsolute:
                     class: ReactionSedimentTransportSolute
