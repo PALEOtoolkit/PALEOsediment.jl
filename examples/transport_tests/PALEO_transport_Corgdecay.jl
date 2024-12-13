@@ -39,7 +39,7 @@ newton_min, newton_max, newton_min_ratio, newton_max_ratio = 1e-80, Inf, 0.1, In
 PALEOmodel.SteadyState.steadystate_ptcForwardDiff(
     paleorun, initial_state, modeldata, tspan, 1e-3;
     deltat_fac=2.0,
-    tss_output=toutput,
+    saveat=toutput,
     solvekwargs=(
         # ftol=1e-7,
         ftol=1e-5,
@@ -47,6 +47,7 @@ PALEOmodel.SteadyState.steadystate_ptcForwardDiff(
         method=:newton,
         linesearch=LineSearches.Static(),
         apply_step! = PALEOmodel.SolverFunctions.StepClampMultAll!(newton_min, newton_max, newton_min_ratio, newton_max_ratio),
+        always_step=true,
         # store_trace=true,
         # show_trace=true, 
     ),
