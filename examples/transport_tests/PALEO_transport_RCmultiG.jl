@@ -41,7 +41,7 @@ paleorun = PALEOmodel.Run(model=model, output = PALEOmodel.OutputWriters.OutputM
 PALEOmodel.SteadyState.steadystate_ptcForwardDiff(
     paleorun, initial_state, modeldata, tspan, 1e-3;
     deltat_fac=2.0,
-    tss_output=toutput,
+    saveat=toutput,
     solvekwargs=(
         # ftol=1e-7,
         ftol=1e-6,
