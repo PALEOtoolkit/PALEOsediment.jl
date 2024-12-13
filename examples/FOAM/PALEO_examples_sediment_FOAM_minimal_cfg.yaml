@@ -156,6 +156,9 @@ sediment_Corg_Stest:
                 transportsedsolid:
                     class: ReactionSedimentTransportSolid
 
+                molecular_diffusivity:   
+                    class: ReactionAqMolecularDiffusivity
+
                 transportsedsolute:
                     class: ReactionSedimentTransportSolute
                     parameters:

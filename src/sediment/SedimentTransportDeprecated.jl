@@ -531,7 +531,7 @@ function find_solute_vars(domain::PB.Domain; include_burial_flux)
         # TODO look up and use existing variable, if present
         st_sms, st_fluxoceanfloorsolute, st_fluxoceanburial, st_mult = [], [], [], Float64[] 
         for tnm in totalnamesmults
-            tmult, tname = PALEOaqchem.parse_number_name(tnm)
+            tmult, tname = PB.parse_number_name(tnm)
             push!(st_sms, PB.VarContrib(tname*"_sms", "mol yr-1", ""))
             push!(st_fluxoceanfloorsolute, PB.VarContribColumn("fluxOceanfloor_soluteflux_"*tname=>"fluxOceanfloor.soluteflux_"*tname, "mol yr-1", ""))
             if include_burial_flux
@@ -580,7 +580,7 @@ function find_solid_vars(domain::PB.Domain)
         # TODO look up and use existing variables, if present
         st_sms, st_fluxoceanburial, st_mult = [], [], Float64[] 
         for tnm in totalnamesmults
-            tmult, tname = PALEOaqchem.parse_number_name(tnm)
+            tmult, tname = PB.parse_number_name(tnm)
             push!(st_sms, PB.VarContrib(tname*"_sms", "mol yr-1", ""))
             push!(st_fluxoceanburial,
                 PB.VarContribColumn("fluxOceanBurial_flux_"*tname=>"fluxOceanBurial.flux_"*tname, "mol yr-1", "")

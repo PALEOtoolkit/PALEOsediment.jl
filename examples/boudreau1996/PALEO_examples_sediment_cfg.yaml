@@ -128,6 +128,9 @@ sediment_Corg_O2:
                 transportsedsolid:
                     class: ReactionSedimentTransportSolid
 
+                molecular_diffusivity:   
+                    class: ReactionAqMolecularDiffusivity
+
                 transportsedsolute:
                     class: ReactionSedimentTransportSolute
                     parameters:                        
@@ -416,6 +419,9 @@ sediment_Corg_O2_carb:
 
                 transportsedsolid:
                     class: ReactionSedimentTransportSolid
+
+                molecular_diffusivity:   
+                    class: ReactionAqMolecularDiffusivity
 
                 transportsedsolute:
                     class: ReactionSedimentTransportSolute

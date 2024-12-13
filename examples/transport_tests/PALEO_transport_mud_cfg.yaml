@@ -117,6 +117,9 @@ sediment_abiotic_O2:
                     parameters:
                         trspt_sms_ext:  _trspt_sms
 
+                molecular_diffusivity:   
+                    class: ReactionAqMolecularDiffusivity
+
                 transportsedsolute:
                     class: ReactionSedimentTransportSolute
                     parameters:                        

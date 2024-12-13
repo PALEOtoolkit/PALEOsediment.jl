@@ -216,6 +216,9 @@ sediment_FOAM:
                 transportsedsolid:
                     class: ReactionSedimentTransportSolid
 
+                molecular_diffusivity:   
+                    class: ReactionAqMolecularDiffusivity
+
                 transportsedsolute:
                     class: ReactionSedimentTransportSolute
                     parameters:
