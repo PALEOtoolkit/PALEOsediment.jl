@@ -1,5 +1,6 @@
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+CommonDataModel = "1fbeeb36-5f17-413c-809b-666fb144f157"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Infiltrator = "5903a43b-9cc3-4c30-8d17-598619ec4e9b"
 LineSearches = "d3d80556-e9d4-5f37-9878-2ab0fcc64255"
@@ -16,7 +17,7 @@ Sundials = "c3572dad-4567-51f8-b174-8c6c989267f4"
 
 [compat]
 PALEOaqchem = "0.3.10"
-PALEOmodel = "0.15.47"
+PALEOmodel = "0.15.47, 0.16"
 
 [extras]
 PALEOboxes = "804b410e-d900-4b2a-9ecd-f5a06d4c1fd4"
