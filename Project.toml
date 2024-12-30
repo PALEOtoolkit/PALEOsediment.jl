@@ -1,7 +1,7 @@
 name = "PALEOsediment"
 uuid = "e0a37952-6f01-4236-91ff-62fdc855f67b"
 authors = ["sd336 "]
-version = "0.3.3"
+version = "0.3.4"
 
 [deps]
 Infiltrator = "5903a43b-9cc3-4c30-8d17-598619ec4e9b"
